@@ -17,8 +17,10 @@ RUN apt-get update \
 # Make links
 RUN ln -s /data/static/alphafold-params . \
     && ln -s /data/static/RFDesign . \
+    && ln -s /data/static/RFDiffusion . \
     && ln -s /data/static/AlphaFold . \
     && ln -s /data/static/openfold . \
+    && ln -s /data/static/proteopt . \
     && ln -s /data/static/OmegaFold . \
     && ln -s /data/static/ProteinMPNN . \
     && ln -s /data/static/design-env/ miniconda3/envs/design-env \
@@ -62,6 +64,7 @@ RUN conda install -n design-env \
     openmm==7.5.1 \
     -c pyg -c conda-forge
 
+# Alphafold
 RUN cd /data/static \
     && git clone https://github.com/deepmind/AlphaFold.git \
     && wget -q -P /data/static/AlphaFold/alphafold/common/ \
@@ -88,6 +91,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
+# RFDesign
 RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDesign.git \
     && cd RFDesign \
@@ -96,6 +100,24 @@ RUN cd /data/static \
     && wget -nv -P rfdesign/inpainting/weights/ http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_mix_epoch25.pt \
     && /root/miniconda3/envs/design-env/bin/pip install -e .
 
+# RFDiffusion
+RUN cd /data/static \
+    && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
+    && cd RFDiffusion \
+    && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
+    && mkdir models \
+    && cd models \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/74f51cfb8b440f50d70878e05361d8f0/InpaintSeq_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/76d00716416567174cdb7ca96e208296/InpaintSeq_Fold_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/5532d2e1f3a4738decd58b19d633b3c3/ActiveSite_ckpt.pt \
+    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/12fc204edeae5b57713c5ad7dcb97d39/Base_epoch8_ckpt.pt \
+    && cd .. \
+    && /root/miniconda3/envs/design-env/bin/pip install -e .
+
+# ProteinMPNN
 RUN cd /data/static \
     && git clone https://github.com/timodonnell/ProteinMPNN.git \
     && cd ProteinMPNN \
@@ -129,6 +151,12 @@ RUN cd /data/static \
 
 # Not sure why this is needed, but it seems to be:
 RUN /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold
+
+# Clone proteopt repo
+RUN cd /data/static \
+    && git clone https://github.com/openvax/proteopt.git \
+    && cd proteopt \
+    && /root/miniconda3/envs/design-env/bin/pip install -e .
 
 # Switch to the design-env on start:
 RUN echo "conda activate design-env" >> ~/.bashrc
