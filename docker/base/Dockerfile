@@ -23,6 +23,7 @@ RUN ln -s /data/static/alphafold-params . \
     && ln -s /data/static/proteopt . \
     && ln -s /data/static/OmegaFold . \
     && ln -s /data/static/ProteinMPNN . \
+    && ln -s /data/static/ColabDesign . \
     && ln -s /data/static/design-env/ miniconda3/envs/design-env \
     && mkdir -p /software/mlfold/alphafold-data \
     && ln -s /data/static/alphafold-params /software/mlfold/alphafold-data/params \
@@ -91,31 +92,20 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
+# ColabDesign
+RUN cd /data/static \
+    && git clone --branch main https://github.com/sokrypton/ColabDesign.git \
+    && cd ColabDesign \
+    && /root/miniconda3/envs/design-env/bin/pip install -e .
+
 # RFDesign
 RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDesign.git \
     && cd RFDesign \
     && git remote add upstream https://github.com/RosettaCommons/RFDesign.git \
+    && /root/miniconda3/envs/design-env/bin/pip install -e . \
     && wget -nv -P rfdesign/hallucination/weights/rf_Nov05 http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_last.pt \
-    && wget -nv -P rfdesign/inpainting/weights/ http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_mix_epoch25.pt \
-    && /root/miniconda3/envs/design-env/bin/pip install -e .
-
-# RFDiffusion
-RUN cd /data/static \
-    && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
-    && cd RFDiffusion \
-    && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
-    && mkdir models \
-    && cd models \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/74f51cfb8b440f50d70878e05361d8f0/InpaintSeq_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/76d00716416567174cdb7ca96e208296/InpaintSeq_Fold_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/5532d2e1f3a4738decd58b19d633b3c3/ActiveSite_ckpt.pt \
-    && wget -nv -P http://files.ipd.uw.edu/pub/RFdiffusion/12fc204edeae5b57713c5ad7dcb97d39/Base_epoch8_ckpt.pt \
-    && cd .. \
-    && /root/miniconda3/envs/design-env/bin/pip install -e .
+    && wget -nv -P rfdesign/inpainting/weights/ http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_mix_epoch25.pt
 
 # ProteinMPNN
 RUN cd /data/static \
@@ -133,6 +123,29 @@ RUN cd /data/static \
     && /root/miniconda3/envs/design-env/bin/pip cache purge \
     && mkdir -p /data/static/openfold-params/ \
     && bash scripts/download_openfold_params_huggingface.sh /data/static/openfold-params/
+
+# RFDiffusion
+RUN cd /data/static \
+    && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
+    && cd RFDiffusion \
+    && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
+    && mkdir models \
+    && cd models \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/74f51cfb8b440f50d70878e05361d8f0/InpaintSeq_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/76d00716416567174cdb7ca96e208296/InpaintSeq_Fold_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/5532d2e1f3a4738decd58b19d633b3c3/ActiveSite_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/12fc204edeae5b57713c5ad7dcb97d39/Base_epoch8_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/f572d396fae9206628714fb2ce00f72e/Complex_beta_ckpt.pt
+
+RUN cd /data/static/RFDiffusion/env/SE3Transformer \
+    && /root/miniconda3/envs/design-env/bin/pip install --no-cache-dir -r requirements.txt \
+    && python setup.py install
+
+RUN cd /data/static/RFDiffusion \
+    && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/RFDiffusion --no-deps
 
 RUN mkdir -p /data/static/example-data \
     && wget -nv -P /data/static/example-data https://files.rcsb.org/download/7SL5.pdb
