@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 as shrunk
+FROM --platform=linux/x86_64 nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 as minimal
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
@@ -23,8 +23,10 @@ RUN apt-get update \
 RUN ln -s /data/static/alphafold-params . \
     && ln -s /data/static/RFDesign . \
     && ln -s /data/static/RFDiffusion . \
+    && ln -s /data/static/rfdiffusion-params . \
     && ln -s /data/static/AlphaFold . \
     && ln -s /data/static/openfold . \
+    && ln -s /data/static/openfold-params . \
     && ln -s /data/static/proteopt . \
     && ln -s /data/static/OmegaFold . \
     && ln -s /data/static/ProteinMPNN . \
@@ -37,7 +39,7 @@ RUN ln -s /data/static/alphafold-params . \
     && ln -s /data/static/omegafold_ckpt ~/.cache/omegafold_ckpt
 
 # ****************************
-FROM shrunk as base
+FROM minimal as base
 RUN mkdir -p /data/static
 
 RUN cd /data/static \
@@ -134,8 +136,9 @@ RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
     && cd RFDiffusion \
     && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
-    && mkdir models \
-    && cd models \
+    && mkdir /data/static/rfdiffusion-params \
+    && ln -s /data/static/rfdiffusion-params models \
+    && cd /data/static/rfdiffusion-params \
     && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
     && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
     && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
@@ -187,7 +190,7 @@ ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
 # ****************************
 # Jupyter setup for interactive usage
-FROM base as interactive
+FROM base as complete
 
 RUN /root/miniconda3/envs/design-env/bin/pip install \
     'ipywidgets<8' \
@@ -205,7 +208,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
 RUN mkdir -p /root/.jupyter
-COPY jupyter_server_config.json /root/.jupyter/
+COPY container-files/jupyter_server_config.json /root/.jupyter/
 
 EXPOSE 8888
 CMD ["/root/miniconda3/envs/design-env/bin/jupyter" , "lab", "--ip=0.0.0.0", "--allow-root"]
