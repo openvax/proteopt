@@ -7,7 +7,7 @@ be able to experiment with multiple approaches for same problem without rewritin
 This package also provides a large docker image with the tools installed (see [docker/base](docker/base)) as well as an 
 image that extends it to include a jupyter environment for interactive work (see [docker/full](docker/full)).
 
-For now this is all very much WIP. Contributions are welcome.
+This is all very much WIP. Contributions are welcome.
 
 ## Tools
 | Tool       | Task | Installed in the docker? | Python API? | Unit tests for API |

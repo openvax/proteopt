@@ -5,7 +5,12 @@ ARG PATH="/root/miniconda3/bin:${PATH}"
 WORKDIR /root
 
 RUN apt-get update \
-    && apt-get install -y wget git vim \
+    && DEBIAN_FRONTEND=noninteractive TZ='America/New York' apt-get install -y \
+      hhsuite \
+      kalign \
+      wget \
+      git \
+      vim \
     && rm -rf /var/lib/apt/lists/* \
     && wget -nv \
       https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
@@ -32,7 +37,7 @@ RUN ln -s /data/static/alphafold-params . \
     && ln -s /data/static/omegafold_ckpt ~/.cache/omegafold_ckpt
 
 # ****************************
-FROM shrunk as complete
+FROM shrunk as base
 RUN mkdir -p /data/static
 
 RUN cd /data/static \
@@ -78,7 +83,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
         opt_einsum==3.3.0 \
         e3nn==0.3.4 \
     && /root/miniconda3/envs/design-env/bin/pip install \
-        "jax[cuda]==0.3.25" \
+        "jax[cuda]==0.4.8" \
         -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html \
     && /root/miniconda3/envs/design-env/bin/pip install \
         dm-tree==0.1.6 \
@@ -169,7 +174,38 @@ RUN /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold
 RUN cd /data/static \
     && git clone https://github.com/openvax/proteopt.git \
     && cd proteopt \
+    && /root/miniconda3/envs/design-env/bin/pip install -r requirements.txt \
     && /root/miniconda3/envs/design-env/bin/pip install -e .
+
+#RUN /root/miniconda3/envs/design-env/bin/pip install -r /data/static/proteopt/requirements.txt
 
 # Switch to the design-env on start:
 RUN echo "conda activate design-env" >> ~/.bashrc
+
+# Was getting some errors from wandb without this:
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# ****************************
+# Jupyter setup for interactive usage
+FROM base as interactive
+
+RUN /root/miniconda3/envs/design-env/bin/pip install \
+    'ipywidgets<8' \
+    pandas \
+    seaborn \
+    jupyterlab \
+    prody \
+    atomium \
+    yabul \
+    nglview \
+    rmsd \
+    ipdb \
+    ipython \
+    && conda clean -afy \
+    && /root/miniconda3/envs/design-env/bin/pip cache purge
+
+RUN mkdir -p /root/.jupyter
+COPY jupyter_server_config.json /root/.jupyter/
+
+EXPOSE 8888
+CMD ["/root/miniconda3/envs/design-env/bin/jupyter" , "lab", "--ip=0.0.0.0", "--allow-root"]
