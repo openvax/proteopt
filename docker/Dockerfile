@@ -1,9 +1,10 @@
-FROM --platform=linux/x86_64 nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 as minimal
+FROM --platform=linux/x86_64 nvidia/cuda:11.8.0-devel-ubuntu22.04 as minimal
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
 WORKDIR /root
 
+# Base packages
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive TZ='America/New York' apt-get install -y \
       hhsuite \
@@ -18,6 +19,12 @@ RUN apt-get update \
     && bash Miniconda3-latest-Linux-x86_64.sh -b \
     && rm -f Miniconda3-latest-Linux-x86_64.sh \
     && conda --version
+
+# Setup cudnn
+RUN wget -nv --progress=dot:giga --show-progress \
+  https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/libcudnn8_8.6.0.163-1+cuda11.8_amd64.deb \
+    && dpkg -i libcudnn8_8.6.0.163-1+cuda11.8_amd64.deb \
+    && rm libcudnn8_8.6.0.163-1+cuda11.8_amd64.deb
 
 # Make links
 RUN ln -s /data/static/alphafold-params . \
@@ -42,11 +49,48 @@ RUN ln -s /data/static/alphafold-params . \
 FROM minimal as base
 RUN mkdir -p /data/static
 
+##### WEIGHTS DOWNOADS #####
+# We try to do as many weights downloads as possible initially so tweaking
+# e.g. python versions later doesn't trigger a redownload.
+# Alphafold weights
 RUN cd /data/static \
     && mkdir -p alphafold-params \
     && wget -nv --progress=dot:giga --show-progress https://storage.googleapis.com/alphafold/alphafold_params_2022-12-06.tar -O params.tar \
     && tar --extract --verbose --file=params.tar --directory=alphafold-params --preserve-permissions \
     && rm -f params.tar
+
+# RFDesign weights
+RUN mkdir /data/static/rfdesign-params \
+    && cd /data/static/rfdesign-params \
+    && wget -nv http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_last.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_mix_epoch25.pt
+
+# RFDiffusion weights
+RUN mkdir /data/static/rfdiffusion-params \
+    && cd /data/static/rfdiffusion-params \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/74f51cfb8b440f50d70878e05361d8f0/InpaintSeq_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/76d00716416567174cdb7ca96e208296/InpaintSeq_Fold_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/5532d2e1f3a4738decd58b19d633b3c3/ActiveSite_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/12fc204edeae5b57713c5ad7dcb97d39/Base_epoch8_ckpt.pt \
+    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/f572d396fae9206628714fb2ce00f72e/Complex_beta_ckpt.pt
+
+# OpenFold
+RUN cd /data/static \
+    && git clone https://github.com/timodonnell/openfold.git \
+    && cd openfold \
+    && git remote add upstream https://github.com/aqlaboratory/openfold.git \
+    && mkdir -p /data/static/openfold-params/ \
+    && bash scripts/download_openfold_params_huggingface.sh /data/static/openfold-params/
+
+# Omegafold
+RUN wget -nv --progress=dot:giga --show-progress \
+    -O /root/.cache/omegafold_ckpt/model.pt \
+    https://helixon.s3.amazonaws.com/release1.pt
+
+##### ENDS WEIGHTS DOWNLOADS #####
 
 # Note that we are using a different version of pytorch than recommended
 # in RFDesign readme (they recommend pytorch=1.10.1)
@@ -59,7 +103,7 @@ RUN rm miniconda3/envs/design-env \
     && conda create -n design-env \
         python=3.8 \
         pytorch=1.11 \
-        dgl-cuda11.3 \
+        dgl-cuda11.6 \
         cudatoolkit=11.3 \
         cuda-toolkit \
         numpy scipy requests packaging pip \
@@ -72,18 +116,15 @@ RUN conda install -n design-env \
     openmm==7.5.1 \
     -c pyg -c conda-forge
 
-# Alphafold
-RUN cd /data/static \
-    && git clone https://github.com/deepmind/AlphaFold.git \
-    && wget -q -P /data/static/AlphaFold/alphafold/common/ \
-      https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
-
+# A lot of environment setup
 RUN /root/miniconda3/envs/design-env/bin/pip install \
         https://github.com/openmm/pdbfixer/archive/refs/tags/v1.7.tar.gz \
         icecream==2.1.3 \
         lie_learn==0.0.1.post1 \
         opt_einsum==3.3.0 \
         e3nn==0.3.4 \
+        hydra-core==1.3.2 \
+        omegaconf==2.3.0 \
     && /root/miniconda3/envs/design-env/bin/pip install \
         "jax[cuda]==0.4.8" \
         -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html \
@@ -99,67 +140,63 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
+# Alphafold install
+RUN cd /data/static \
+    && git clone https://github.com/deepmind/AlphaFold.git \
+    && wget -q -P /data/static/AlphaFold/alphafold/common/ \
+      https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt \
+    && /root/miniconda3/envs/design-env/bin/pip install -e ~/AlphaFold
+
 # ColabDesign
 RUN cd /data/static \
     && git clone --branch main https://github.com/sokrypton/ColabDesign.git \
     && cd ColabDesign \
-    && /root/miniconda3/envs/design-env/bin/pip install -e .
+    && /root/miniconda3/envs/design-env/bin/pip install -e ~/ColabDesign
 
 # RFDesign
 RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDesign.git \
     && cd RFDesign \
     && git remote add upstream https://github.com/RosettaCommons/RFDesign.git \
-    && /root/miniconda3/envs/design-env/bin/pip install -e . \
-    && wget -nv -P rfdesign/hallucination/weights/rf_Nov05 http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_last.pt \
-    && wget -nv -P rfdesign/inpainting/weights/ http://files.ipd.uw.edu/pub/rfdesign/weights/BFF_mix_epoch25.pt
+    && /root/miniconda3/envs/design-env/bin/pip install -e ~/RFDesign \
+    && mkdir -p rfdesign/hallucination/weights/rf_Nov05/ \
+    && ln -s /data/static/rfdesign-params/BFF_last.pt rfdesign/hallucination/weights/rf_Nov05/BFF_last.pt \
+    && mkdir -p rfdesign/inpainting/weights/ \
+    && ln -s /data/static/rfdesign-params/BFF_mix_epoch25.pt rfdesign/inpainting/weights/BFF_mix_epoch25.pt \
+    && ls -lh rfdesign/hallucination/weights/rf_Nov05/BFF_last.pt\
+    && ls -lh rfdesign/inpainting/weights/BFF_mix_epoch25.pt
 
 # ProteinMPNN
 RUN cd /data/static \
     && git clone https://github.com/timodonnell/ProteinMPNN.git \
     && cd ProteinMPNN \
     && git remote add upstream https://github.com/dauparas/ProteinMPNN.git \
-    && /root/miniconda3/envs/design-env/bin/pip install -e .
+    && /root/miniconda3/envs/design-env/bin/pip install -e ~/ProteinMPNN
 
 # OpenFold
-RUN cd /data/static \
-    && git clone https://github.com/timodonnell/openfold.git \
-    && cd openfold \
-    && git remote add upstream https://github.com/aqlaboratory/openfold.git \
-    && /root/miniconda3/envs/design-env/bin/pip install -e . \
-    && /root/miniconda3/envs/design-env/bin/pip cache purge \
-    && mkdir -p /data/static/openfold-params/ \
-    && bash scripts/download_openfold_params_huggingface.sh /data/static/openfold-params/
+RUN cd /data/static/openfold \
+    && git pull origin main \
+    && /root/miniconda3/envs/design-env/bin/pip install -e ~/openfold
 
 # RFDiffusion
 RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
     && cd RFDiffusion \
     && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
-    && mkdir /data/static/rfdiffusion-params \
-    && ln -s /data/static/rfdiffusion-params models \
-    && cd /data/static/rfdiffusion-params \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1bf1af907f9ef9f44b8328b/Complex_base_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/60f09a193fb5e5ccdc4980417708dbab/Complex_Fold_base_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/74f51cfb8b440f50d70878e05361d8f0/InpaintSeq_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/76d00716416567174cdb7ca96e208296/InpaintSeq_Fold_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/5532d2e1f3a4738decd58b19d633b3c3/ActiveSite_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/12fc204edeae5b57713c5ad7dcb97d39/Base_epoch8_ckpt.pt \
-    && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/f572d396fae9206628714fb2ce00f72e/Complex_beta_ckpt.pt
+    && ln -s /data/static/rfdiffusion-params models
 
 RUN cd /data/static/RFDiffusion/env/SE3Transformer \
     && /root/miniconda3/envs/design-env/bin/pip install --no-cache-dir -r requirements.txt \
-    && python setup.py install
-
-RUN cd /data/static/RFDiffusion \
+    && python setup.py install \
+    && cd /data/static/RFDiffusion \
     && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/RFDiffusion --no-deps
 
+# We run OmegaFold to test that it has the weights.
 RUN mkdir -p /data/static/example-data \
-    && wget -nv -P /data/static/example-data https://files.rcsb.org/download/7SL5.pdb
-COPY container-files/test_protein.fa /data/static/example-data/
+    && wget -nv -P /data/static/example-data https://files.rcsb.org/download/7SL5.pdb \
+    && ls -lh /root/.cache/omegafold_ckpt/model.pt
 
-# We run OmegaFold to force it download the weights
+COPY container-files/test_protein.fa /data/static/example-data/
 RUN cd /data/static \
     && git clone https://github.com/timodonnell/OmegaFold \
     && cd OmegaFold \
@@ -170,17 +207,12 @@ RUN cd /data/static \
     && ls -lh /tmp/omegafold_out \
     && rm -rf /tmp/omegafold_out
 
-# Not sure why this is needed, but it seems to be:
-RUN /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold
-
 # Clone proteopt repo
 RUN cd /data/static \
     && git clone https://github.com/openvax/proteopt.git \
     && cd proteopt \
     && /root/miniconda3/envs/design-env/bin/pip install -r requirements.txt \
     && /root/miniconda3/envs/design-env/bin/pip install -e .
-
-#RUN /root/miniconda3/envs/design-env/bin/pip install -r /data/static/proteopt/requirements.txt
 
 # Switch to the design-env on start:
 RUN echo "conda activate design-env" >> ~/.bashrc
@@ -198,7 +230,6 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     seaborn \
     jupyterlab \
     prody \
-    atomium \
     yabul \
     nglview \
     rmsd \
