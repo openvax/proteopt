@@ -2,9 +2,9 @@ set -e
 set -x 
 
 NUM="${1:-2}"
-NUM_PER=1
+NUM_PER="${2:-1}"
 
-source ../paths.sh
+ALPHAFOLD_WEIGHTS_DIR="/software/mlfold/alphafold-data"
 
 ENDPOINTS_FILE=/tmp/PROTEOPT_ENDPOINTS.TXT
 PIDS_FILE=/tmp/PROTEOPT_ENDPOINTS.PIDS.TXT
@@ -18,7 +18,7 @@ do
 	for j in $(seq $NUM_PER)
 	do
 		CUDA_VISIBLE_DEVICES=$(expr $i - 1) python \
-			~/git/proteopt/api.py \
+			~/proteopt/api.py \
 			--debug \
 			--alphafold-data-dir "$ALPHAFOLD_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &

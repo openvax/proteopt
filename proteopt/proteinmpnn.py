@@ -1,7 +1,7 @@
 import tempfile
 import os
 import json
-import pickle
+from typing import Optional
 
 import numpy
 import pandas
@@ -12,20 +12,25 @@ import yabul
 
 from ProteinMPNN import protein_mpnn_run
 
+from .common import args_from_function_signature
 
 class ProteinMPNN(object):
+    tool_name = "proteinmpnn"
+    config_args = {}
+    model_args = {}
+
     def __init__(self):
         pass
 
     def run(
             self,
-            structure,
-            fixed=None,
-            num=1,
-            ca_only=False,
-            sampling_temp=0.1,
-            batch_size=1,
-            verbose=False):
+            structure : prody.Atomic,
+            fixed : Optional[prody.Atomic] = None,
+            num : int = 1,
+            ca_only : bool = False,
+            sampling_temp : float = 0.1,
+            batch_size : int = 1,
+            verbose : bool = False):
 
         # Reset resnums to avoid gaps
         chains = numpy.unique(structure.getChids())
@@ -124,5 +129,19 @@ class ProteinMPNN(object):
         temp_dir.cleanup()
         return result_df
 
+    def run_multiple(self, list_of_dicts, show_progress=False):
+        results = []
 
+        iterator = list_of_dicts
+        if show_progress:
+            import tqdm
+            iterator = tqdm.tqdm(list_of_dicts)
+
+        for kwargs in iterator:
+            result = self.run(**kwargs)
+            assert result is not None
+            results.append(result)
+        return results
+
+    run_args = args_from_function_signature(run)
 

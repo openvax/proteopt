@@ -11,6 +11,7 @@ from flask import Flask
 from flask_restful import reqparse, abort, Api, Resource, inputs
 
 import proteopt.alphafold
+import proteopt.proteinmpnn
 import proteopt.mock_tool
 from proteopt.common import serialize, deserialize
 
@@ -38,6 +39,7 @@ def add_argument(parser, arg_name, info, append=False):
 TOOL_CLASSES = [
     proteopt.mock_tool.MockTool,
     proteopt.alphafold.AlphaFold,
+    proteopt.proteinmpnn.ProteinMPNN,
 ]
 TOOLS = dict((cls.tool_name, cls) for cls in TOOL_CLASSES)
 
@@ -157,7 +159,8 @@ for tool_name, tool_class in TOOLS.items():
 if __name__ == '__main__':
     args = arg_parser.parse_args(sys.argv[1:])
 
-    tool_configs = collections.defaultdict(dict)  # tool name -> dict
+    # tool name -> dict
+    tool_configs = dict((tool_name, {}) for tool_name in TOOLS.keys())
     for (arg, (tool, parameter)) in arg_names_to_tool_configs.items():
         tool_configs[tool][parameter] = getattr(args, arg)
 

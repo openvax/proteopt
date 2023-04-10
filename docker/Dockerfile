@@ -45,6 +45,10 @@ RUN ln -s /data/static/alphafold-params . \
     && mkdir -p ~/.cache \
     && ln -s /data/static/omegafold_ckpt ~/.cache/omegafold_ckpt
 
+# Was getting some errors from wandb without this:
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+
 # ****************************
 FROM minimal as base
 RUN mkdir -p /data/static
@@ -217,8 +221,6 @@ RUN cd /data/static \
 # Switch to the design-env on start:
 RUN echo "conda activate design-env" >> ~/.bashrc
 
-# Was getting some errors from wandb without this:
-ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
 # ****************************
 # Jupyter setup for interactive usage

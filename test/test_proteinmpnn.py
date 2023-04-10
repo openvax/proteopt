@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 ALPHAFOLD_WEIGHTS_DIR = "/software/mlfold/alphafold-data"
 
 
-def Xtest_basic():
+def test_basic():
     region1 = prody.parsePDB(
         os.path.join(DATA_DIR, "1MBN.pdb")
     ).select("protein chain A and resid 10 to 39")
