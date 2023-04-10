@@ -14,3 +14,4 @@ do
     $PIP install -e .
     cd ..
 done
+$PIP install --upgrade biopython

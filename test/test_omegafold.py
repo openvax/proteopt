@@ -26,7 +26,9 @@ def test_basic():
 
 
 def test_compare_to_ground_truth():
-    model = proteopt.omegafold.OmegaFold(data_dir=OMEGAFOLD_WEIGHTS_DIR)
+    model = proteopt.omegafold.OmegaFold(
+        data_dir=OMEGAFOLD_WEIGHTS_DIR,
+        model_num=1)
 
     truth = prody.parsePDB(
         os.path.join(DATA_DIR, "1MBN.pdb")).select("protein chain A")

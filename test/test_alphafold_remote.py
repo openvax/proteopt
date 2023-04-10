@@ -46,7 +46,7 @@ def test_multiple_endpoints_mock(multiple_running_server_endpoints):
 
 def test_basic_mock(running_server_endpoint):
     client = proteopt.client.Client(endpoints=[running_server_endpoint])
-    model = client.premote_model(
+    model = client.remote_model(
         proteopt.alphafold.AlphaFold,
         model_name="MOCK",
         max_length=16,

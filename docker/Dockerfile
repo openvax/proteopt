@@ -53,7 +53,7 @@ ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 FROM minimal as base
 RUN mkdir -p /data/static
 
-##### WEIGHTS DOWNOADS #####
+##### WEIGHTS DOWNLOADS #####
 # We try to do as many weights downloads as possible initially so tweaking
 # e.g. python versions later doesn't trigger a redownload.
 # Alphafold weights
@@ -123,7 +123,7 @@ RUN conda install -n design-env \
     openmm==7.5.1 \
     -c pyg -c conda-forge
 
-# A lot of environment setup
+# conda environment setup
 RUN /root/miniconda3/envs/design-env/bin/pip install \
         https://github.com/openmm/pdbfixer/archive/refs/tags/v1.7.tar.gz \
         icecream==2.1.3 \

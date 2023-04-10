@@ -1,5 +1,5 @@
 # Note: much of this is inspired by RFDesign af2_metrics.py script
-import collections
+import os
 import io
 import numpy
 import pandas
@@ -66,7 +66,7 @@ class AlphaFold(object):
         if model_name == "MOCK":
             return
 
-        from alphafold.model import data, config, model
+        from alphafold.model import data, config, model, utils
 
         self.max_length = max_length
         self.amber_relax = amber_relax
@@ -80,9 +80,10 @@ class AlphaFold(object):
         # self.model_config.data.common.max_extra_msa = 1
         # self.model_config.data.eval.max_msa_clusters = 1
 
-        self.model_params = data.get_model_haiku_params(
-            model_name=model_name,
-            data_dir=data_dir)
+        weights_path = os.path.join(data_dir, f'params_{model_name}.npz')
+        with open(weights_path, 'rb') as f:
+            params = numpy.load(io.BytesIO(f.read()), allow_pickle=False)
+        self.model_params = utils.flat_params_to_haiku(params)
         self.model_runner = model.RunModel(self.model_config, self.model_params)
         self.model2crop_feats = {
             k:[None]+v for k,v in dict(self.model_config.data.eval.feat).items()
