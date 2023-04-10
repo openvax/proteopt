@@ -41,7 +41,8 @@ class OmegaFold(object):
         else:
             raise ValueError("Unsupported model num: %s" % model_num)
 
-        weights = torch.load(os.path.join(data_dir, model_name))
+        weights = torch.load(
+            os.path.join(data_dir, model_name), map_location='cpu')
         weights = weights.pop('model', weights)
 
         self.forward_config = argparse.Namespace(
@@ -62,7 +63,15 @@ class OmegaFold(object):
     model_args = args_from_function_signature(
         __init__, exclude=list(config_args))
 
-    def run_multiple(self, sequences, show_progress=False):
+    def run_multiple(self, sequences, show_progress=False, items_per_request=None):
+        new_sequences = []
+        for obj in sequences:
+            if isinstance(obj, dict):
+                assert list(obj) == ["sequence"]
+                obj = obj["sequence"]
+            new_sequences.append(obj)
+        sequences = new_sequences
+
         results = []
 
         temp_dir = None

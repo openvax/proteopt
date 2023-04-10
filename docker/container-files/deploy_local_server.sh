@@ -22,7 +22,7 @@ do
 			~/proteopt/api.py \
 			--debug \
 			--alphafold-data-dir "$ALPHAFOLD_WEIGHTS_DIR" \
-			--omegafold-data-dir "OMEGAFOLD_WEIGHTS_DIR" \
+			--omegafold-data-dir "$OMEGAFOLD_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &
 		pids+=("$!")
 		sleep 1

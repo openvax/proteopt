@@ -10,7 +10,7 @@ import proteopt.proteinmpnn
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 
-ALPHAFOLD_WEIGHTS_DIR = "/software/mlfold/alphafold-data"
+from .util import ALPHAFOLD_WEIGHTS_DIR
 
 
 def test_basic():
