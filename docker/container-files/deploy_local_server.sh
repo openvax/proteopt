@@ -4,7 +4,8 @@ set -x
 NUM="${1:-2}"
 NUM_PER="${2:-1}"
 
-ALPHAFOLD_WEIGHTS_DIR="/software/mlfold/alphafold-data"
+ALPHAFOLD_WEIGHTS_DIR="/data/static/alphafold-params/"
+OMEGAFOLD_WEIGHTS_DIR="/data/static/omegafold_ckpt/"
 
 ENDPOINTS_FILE=/tmp/PROTEOPT_ENDPOINTS.TXT
 PIDS_FILE=/tmp/PROTEOPT_ENDPOINTS.PIDS.TXT
@@ -21,6 +22,7 @@ do
 			~/proteopt/api.py \
 			--debug \
 			--alphafold-data-dir "$ALPHAFOLD_WEIGHTS_DIR" \
+			--omegafold-data-dir "OMEGAFOLD_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &
 		pids+=("$!")
 		sleep 1

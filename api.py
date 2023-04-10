@@ -13,6 +13,7 @@ from flask_restful import reqparse, abort, Api, Resource, inputs
 import proteopt.alphafold
 import proteopt.proteinmpnn
 import proteopt.mock_tool
+import proteopt.omegafold
 from proteopt.common import serialize, deserialize
 
 app = Flask(__name__)
@@ -40,6 +41,7 @@ TOOL_CLASSES = [
     proteopt.mock_tool.MockTool,
     proteopt.alphafold.AlphaFold,
     proteopt.proteinmpnn.ProteinMPNN,
+    proteopt.omegafold.OmegaFold,
 ]
 TOOLS = dict((cls.tool_name, cls) for cls in TOOL_CLASSES)
 

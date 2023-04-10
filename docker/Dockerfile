@@ -93,6 +93,9 @@ RUN cd /data/static \
 RUN wget -nv --progress=dot:giga --show-progress \
     -O /root/.cache/omegafold_ckpt/model.pt \
     https://helixon.s3.amazonaws.com/release1.pt
+RUN wget -nv --progress=dot:giga --show-progress \
+    -O /root/.cache/omegafold_ckpt/model2.pt \
+    https://helixon.s3.amazonaws.com/release2.pt
 
 ##### ENDS WEIGHTS DOWNLOADS #####
 

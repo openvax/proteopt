@@ -6,7 +6,8 @@ import pytest
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 REPO_ROOT_DIR = os.path.abspath(os.path.join(DATA_DIR, "..", ".."))
-ALPHAFOLD_WEIGHTS_DIR = "/software/mlfold/alphafold-data"
+ALPHAFOLD_WEIGHTS_DIR = "/data/static/alphafold-params/"
+OMEGAFOLD_WEIGHTS_DIR = "/data/static/omegafold_ckpt/"
 
 
 def run_server(port, sleep_seconds=3.0):
@@ -23,6 +24,7 @@ def run_server(port, sleep_seconds=3.0):
             "--port", str(port),
             "--mock-server-name", 'test-server',
             "--alphafold-data-dir", ALPHAFOLD_WEIGHTS_DIR,
+            "--omegafold-data-dir", OMEGAFOLD_WEIGHTS_DIR,
             "--write-endpoint-to-file", endpoint_file,
         ])
     time.sleep(sleep_seconds)
