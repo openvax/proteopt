@@ -44,7 +44,7 @@ def args_from_function_signature(function, include=[], exclude=[]):
             d['type'] = parameter.annotation
         else:
             d['type'] = object
-        if parameter.default is not parameter.empty:
+        if parameter.default is not xparameter.empty:
             d['default'] = parameter.default
         result[parameter.name] = d
     return result
