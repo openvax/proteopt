@@ -25,7 +25,7 @@ do
 			--omegafold-data-dir "$OMEGAFOLD_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &
 		pids+=("$!")
-		sleep 1
+		sleep 2
 		cat /tmp/proteopt_endpoint.txt >> "$ENDPOINTS_FILE"
 	done
 done
