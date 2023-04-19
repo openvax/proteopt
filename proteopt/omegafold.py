@@ -112,6 +112,8 @@ class OmegaFold(object):
                     results.append(handle)
                     torch.cuda.empty_cache()
                     gc.collect()
+
+                    #import ipdb ; ipdb.set_trace()
             finally:
                 temp_dir.cleanup()
 

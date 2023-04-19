@@ -24,7 +24,7 @@ def test_basic_real(multiple_running_server_endpoints):
         items.append("SIIN" * numpy.random.randint(3,10))
     print(items)
 
-    predictions = model.predict_multiple(items, items_per_request=2)
+    predictions = model.run_multiple(items, items_per_request=2)
 
     for (i, prediction) in enumerate(predictions):
         assert prediction.ca.getSequence() == items[i]

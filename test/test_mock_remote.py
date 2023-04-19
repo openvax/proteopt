@@ -21,6 +21,16 @@ def test_multiple_endpoints_mock(multiple_running_server_endpoints):
     results = list(results)
     assert results == ["test-server: hi tim", "test-server: hi joe 3.00"]
 
+    results = model.run_multiple([
+        dict(name="item_%d" % i, sleep_time=1/(i+1))
+        for i in range(100)
+    ], items_per_request=3)
+    results = list(results)
+    assert results == [
+        "test-server: hi item_%d" % i for i in range(100)
+    ]
+
+
 
 def test_basic_mock(running_server_endpoint):
     client = proteopt.client.Client(endpoints=[running_server_endpoint])

@@ -24,6 +24,14 @@ def test_basic():
     assert prediction.ca.getSequence() == "SIINFEKL"
     assert (prediction.getCoords()**2).sum() > 0
 
+    items = []
+    for i in range(100):
+        items.append("SIIN" * numpy.random.randint(3, 10))
+
+    predictions = model.run_multiple(items)
+    for (i, prediction) in enumerate(predictions):
+        assert prediction.ca.getSequence() == items[i]
+
 
 def test_compare_to_ground_truth():
     model = proteopt.omegafold.OmegaFold(
