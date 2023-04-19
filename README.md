@@ -4,7 +4,7 @@ Common interface to protein design tools and structure predictors
 The goal is provide a Python API that wraps recent protein design and structure prediction tools. We want to
 be able to experiment with multiple approaches for same problem without rewriting our task for each tool's API.
 
-This package also provides a huge docker image with the tools installed, including
+This package also provides a [huge docker image](https://hub.docker.com/r/timodonnell/proteopt-complete) with the tools installed, including
 model weights.
 
 This is all very much WIP. Contributions are welcome.

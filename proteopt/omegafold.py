@@ -1,11 +1,10 @@
 import os
-import io
 import tempfile
 import argparse
 import gc
 
 import numpy
-import pandas
+import numpy.testing
 import prody
 
 import yabul
@@ -72,8 +71,7 @@ class OmegaFold(object):
             new_sequences.append(obj)
         sequences = new_sequences
 
-        results = []
-
+        results = {}
         temp_dir = None
         with torch.no_grad():
             try:
@@ -94,6 +92,7 @@ class OmegaFold(object):
                     import tqdm
                     inputs = tqdm.tqdm(inputs, total=len(sequences))
 
+                results = {}
                 for i, (input_data, save_path) in enumerate(inputs):
                     output = self.model(
                         input_data,
@@ -109,15 +108,19 @@ class OmegaFold(object):
                         model=0
                     )
                     handle = prody.parsePDB(save_path)
-                    results.append(handle)
+                    results[
+                        os.path.basename(save_path).replace(".pdb", "")
+                    ] = handle
                     torch.cuda.empty_cache()
                     gc.collect()
 
-                    #import ipdb ; ipdb.set_trace()
             finally:
                 temp_dir.cleanup()
 
-        return results
+        ordered_results = [results["seq_%d" % i] for i in range(len(sequences))]
+        for (sequence, handle) in zip(sequences, ordered_results):
+            numpy.testing.assert_equal(handle.ca.getSequence(), sequence)
+        return ordered_results
 
     def run(self, sequence : str):
         result, = self.run_multiple([sequence])

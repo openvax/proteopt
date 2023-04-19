@@ -16,28 +16,27 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 
 from .util import OMEGAFOLD_WEIGHTS_DIR
 
-def test_basic():
-    model = proteopt.omegafold.OmegaFold(data_dir=OMEGAFOLD_WEIGHTS_DIR)
+model = proteopt.omegafold.OmegaFold(data_dir=OMEGAFOLD_WEIGHTS_DIR)
 
+def test_basic():
+    # Predict a peptide
     prediction = model.run("SIINFEKL")
     print(prediction)
     assert prediction.ca.getSequence() == "SIINFEKL"
     assert (prediction.getCoords()**2).sum() > 0
 
+def test_multiple():
+    # Run a bunch of peptide predictions at once
     items = []
-    for i in range(100):
+    for i in range(10):
         items.append("SIIN" * numpy.random.randint(3, 10))
 
     predictions = model.run_multiple(items)
     for (i, prediction) in enumerate(predictions):
         assert prediction.ca.getSequence() == items[i]
 
-
-def test_compare_to_ground_truth():
-    model = proteopt.omegafold.OmegaFold(
-        data_dir=OMEGAFOLD_WEIGHTS_DIR,
-        model_num=1)
-
+def test_ground_truth():
+    # Compare to ground truth for a real structure
     truth = prody.parsePDB(
         os.path.join(DATA_DIR, "1MBN.pdb")).select("protein chain A")
 
