@@ -1,20 +1,21 @@
 import os
 import time
-import functools
+import logging
 
-import proteopt
 import prody
 import numpy
 
 import torch
 
-from proteopt import rfdiffusion
+from proteopt import rfdiffusion_motif
 from proteopt.scaffold_problem import ScaffoldProblem
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 
+from . import util
 
-def test_basic():
+def test_basic(caplog):
+    caplog.set_level(logging.INFO)
     handle = prody.parsePDB(os.path.join(DATA_DIR, "1MBN.pdb"), model=1)
     print(len(handle))
 
@@ -30,7 +31,8 @@ def test_basic():
     problem.add_fixed_length_segment(length=30)
 
     start = time.time()
-    runner = rfdiffusion.RFDiffusionMotif()
+    runner = rfdiffusion_motif.RFDiffusionMotif(
+        models_dir=util.RFDIFFUSION_WEIGHTS_DIR)
     print(runner.conf)
     print("*** Initialization time", time.time() - start)
 
@@ -42,7 +44,6 @@ def test_basic():
 
     assert len(results) == 1
     result = results.iloc[0]
-    import ipdb ; ipdb.set_trace()
 
     construct = result.structure
     seq = construct.ca.getSequence()

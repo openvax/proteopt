@@ -12,14 +12,7 @@ GeneratedSegment = collections.namedtuple(
 ChainBreak = collections.namedtuple("ChainBreak", [])
 
 
-def check_solution_sequence_is_valid(segments, sequence, ipdb_on_error=False):
-    if ipdb_on_error:
-        result, msg = check_solution_sequence_is_valid(segments, sequence)
-        if not result:
-            import ipdb
-            ipdb.set_trace()
-            return result, msg
-
+def check_solution_sequence_is_valid(segments, sequence):
     # Recursive
     if not segments:
         if not sequence:
@@ -64,10 +57,13 @@ class ScaffoldProblem(object):
             for s in self.segments
         ])
 
-    def check_solution_sequence_is_valid(self, sequence):
+    def check_solution_sequence_is_valid(self, sequence, ipdb_on_error=False):
         code, msg = check_solution_sequence_is_valid(self.segments, sequence)
         if code:
             return True
+        if ipdb_on_error:
+            import ipdb
+            ipdb.set_trace()
         raise ValueError("%s Full sequence: %s. Segments: %s" % (
             msg, sequence, self.segments))
 

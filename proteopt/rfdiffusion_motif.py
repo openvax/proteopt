@@ -30,7 +30,7 @@ def make_deterministic(seed=0):
 DEFAUT_CONFIG_YAML = """
 inference:
   input_pdb: null
-  num_designs: 10
+  num_designs: 1
   design_startnum: 0
   ckpt_override_path: null
   symmetry: null
@@ -211,9 +211,12 @@ class RFDiffusionMotif(object):
 
     def __init__(
             self,
+            models_dir=None,
             base_config=OmegaConf.to_container(DEFAULT_CONFIG)):
 
-        self.conf = OmegaConf.create(base_config)
+        self.conf = OmegaConf.create(base_config).copy()
+        if models_dir:
+            self.conf.inference.model_directory_path = models_dir
 
     config_args = args_from_function_signature(
         __init__, include=["config"])
@@ -248,7 +251,7 @@ class RFDiffusionMotif(object):
 
         with tempfile.NamedTemporaryFile(suffix=".pdb") as input_pdb:
             prody.writePDB(input_pdb.name, problem.structure)
-            config.inputpdb = input_pdb.name
+            config.inference.input_pdb = input_pdb.name
 
             sampler = rfdiffusion.inference.utils.sampler_selector(config)
 
@@ -307,7 +310,7 @@ class RFDiffusionMotif(object):
                     pdb_result = prody.parsePDB(fd.name)
                     problem.annotate_solution(pdb_result)
                     problem.check_solution_sequence_is_valid(
-                        pdb_result.ca.getSequence(), ipdb_on_error=True)
+                        pdb_result.ca.getSequence(), ipdb_on_error=False)
 
                 results.append(collections.OrderedDict([
                     ("design_num", design_num),

@@ -8,7 +8,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
 REPO_ROOT_DIR = os.path.abspath(os.path.join(DATA_DIR, "..", ".."))
 ALPHAFOLD_WEIGHTS_DIR = "/data/static/alphafold-params/"
 OMEGAFOLD_WEIGHTS_DIR = "/data/static/omegafold_ckpt/"
-
+RFDIFFUSION_WEIGHTS_DIR = "/data/static/rfdiffusion-params"
 
 def run_server(port, sleep_seconds=3.0):
     endpoint_file = "/tmp/proteopt_endpoint.txt"
