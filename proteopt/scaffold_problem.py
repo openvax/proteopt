@@ -12,7 +12,14 @@ GeneratedSegment = collections.namedtuple(
 ChainBreak = collections.namedtuple("ChainBreak", [])
 
 
-def check_solution_sequence_is_valid(segments, sequence):
+def check_solution_sequence_is_valid(segments, sequence, ipdb_on_error=False):
+    if ipdb_on_error:
+        result, msg = check_solution_sequence_is_valid(segments, sequence)
+        if not result:
+            import ipdb
+            ipdb.set_trace()
+            return result, msg
+
     # Recursive
     if not segments:
         if not sequence:
