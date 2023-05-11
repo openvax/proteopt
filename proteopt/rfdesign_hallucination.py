@@ -31,10 +31,10 @@ def make_args_from_problem(problem: ScaffoldProblem):
                     force_aa_hal.append(
                         "A%d%s" % (hallucinated_index + i, aa))
 
-            if contig.resnums is not None:
+            if contig.resindices is not None:
                 previous = None
                 pieces = []
-                for resnum in contig.resnums:
+                for resnum in contig.resindices + 1:
                     if previous is None:
                         # Start segment
                         pieces.append("%s%d-" % (contig.chain, resnum))
@@ -83,7 +83,7 @@ class RFDesignHallucination(object):
 
         temp_dir = tempfile.TemporaryDirectory("proteopt_rfdesign_hallucination")
         input_pdb_path = os.path.join(temp_dir.name, "input.pdb")
-        prody.writePDB(input_pdb_path, problem.structure)
+        prody.writePDB(input_pdb_path, problem.get_structure())
 
         out_path = os.path.join(temp_dir.name, "results")
         os.mkdir(out_path)

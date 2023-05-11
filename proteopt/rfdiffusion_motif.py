@@ -175,22 +175,22 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
     for (i, contig) in enumerate(problem.segments):
         if isinstance(contig, ConstrainedSegment):
             if contig.sequence is not None:
-                if contig.resnums is None:
+                if contig.resindices is None:
                     raise ValueError(
                         "Cannot constrain sequence without also constraining structure")
 
-            if contig.resnums is not None:
+            if contig.resindices is not None:
                 previous = None
                 pieces = []
-                for resnum in contig.resnums:
+                for resindex in contig.resindices + 1:
                     if previous is None:
                         # Start segment
-                        pieces.append("%s%d-" % (contig.chain, resnum))
-                    elif resnum not in (previous, previous + 1):
+                        pieces.append("%s%d-" % (contig.chain, resindex))
+                    elif resindex != previous + 1:
                         # End segment
                         pieces.append("%d" % previous)
-                        pieces.append("/%s%d-" % (contig.chain, resnum))
-                    previous = resnum
+                        pieces.append("/%s%d-" % (contig.chain, resindex))
+                    previous = resindex
                 # End final segment
                 pieces.append("%d" % previous)
                 contigs.append("".join(pieces))
@@ -246,11 +246,12 @@ class RFDiffusionMotif(object):
 
         config = self.conf.copy()
         contigmap = make_contigmap_from_problem(problem)
-        logging.info("rfdiffusion contigmap", contigmap)
+        logging.info("rfdiffusion contigmap: %s", contigmap)
         config.contigmap.contigs = [contigmap]
 
         with tempfile.NamedTemporaryFile(suffix=".pdb") as input_pdb:
-            prody.writePDB(input_pdb.name, problem.structure)
+            input_structure = problem.get_structure()
+            prody.writePDB(input_pdb.name, input_structure)
             config.inference.input_pdb = input_pdb.name
 
             sampler = rfdiffusion.inference.utils.sampler_selector(config)

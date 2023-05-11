@@ -23,7 +23,7 @@ def make_contigs_argument(problem : ScaffoldProblem):
             if segment.resnums is not None:
                 previous = None
                 pieces = []
-                for resnum in segment.resnums:
+                for resnum in segment.resindices + 1:
                     if previous is None:
                         # Start segment
                         pieces.append("%s%d-" % (segment.chain, resnum))

@@ -5,7 +5,7 @@ import pickle
 from .common import set_residue_data, serialize, deserialize
 
 ConstrainedSegment = collections.namedtuple(
-    "ConstrainedSegment", ["length", "chain", "resnums", "sequence"])
+    "ConstrainedSegment", ["length", "chain", "resindices", "sequence"])
 
 GeneratedSegment = collections.namedtuple(
     "GeneratedSegment", ["min_length", "max_length"])
@@ -52,6 +52,12 @@ class ScaffoldProblem(object):
             segments = []
         self.segments = segments
 
+    def get_structure(self, renumber_resnums_as_resindices=True):
+        handle = self.structure.copy()
+        if renumber_resnums_as_resindices:
+            handle.setResnums(handle.getResindices() + 1)
+        return handle
+
     def is_fixed_length(self):
         return all([
             not isinstance(s, GeneratedSegment)
@@ -77,10 +83,10 @@ class ScaffoldProblem(object):
         for (segment_num, segment) in enumerate(self.segments):
             if isinstance(segment, ConstrainedSegment):
                 mask_item = {
-                    "constrained_by_structure": segment.resnums is not None,
+                    "constrained_by_structure": segment.resindices is not None,
                     "constrained_by_sequence": segment.sequence is not None,
                     "unconstrained": (
-                            segment.resnums is None
+                            segment.resindices is None
                             and segment.sequence is None)
                 }
                 for (k, v) in mask_item.items():
@@ -110,32 +116,32 @@ class ScaffoldProblem(object):
             sequence_from_structure=True,  # if structure specified use sequence from that
     ):
         # Add a segment with a fixed structure, sequence, or both.
-        # sub_structure must be taken from self.structure (i.e. resnums must
+        # sub_structure must be taken from self.structure (i.e. resindices must
         # agree)
-        resnums = None
+        resindices = None
         chain = None
         if structure is not None:
             chains = numpy.unique(structure.getChids())
             if len(chains) > 1:
                 raise NotImplementedError("Multiple chains in contig")
             chain, = chains
-            resnums = structure.ca.getResnums()
+            resindices = structure.ca.getResindices()
             if length is None:
-                length = len(resnums)
-            assert len(resnums) == length
+                length = len(resindices)
+            assert len(resindices) == length
             if sequence is None and sequence_from_structure:
                 sequence = structure.ca.getSequence()
         if sequence is not None:
             if length is not None and length != len(sequence):
                 raise ValueError(
                     "structure has %d residues but sequence has %d" % (
-                        len(resnums), len(sequence)))
+                        len(resindices), len(sequence)))
             if length is None:
                 length = len(sequence)
             assert len(sequence) == length
         if length is None:
             raise ValueError("must specify length, structure, or sequence")
-        self.segments.append(ConstrainedSegment(length, chain, resnums, sequence))
+        self.segments.append(ConstrainedSegment(length, chain, resindices, sequence))
         return self
 
     def add_variable_length_segment(self, min_length, max_length):
