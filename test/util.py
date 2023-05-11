@@ -25,6 +25,7 @@ def run_server(port, sleep_seconds=3.0):
             "--mock-server-name", 'test-server',
             "--alphafold-data-dir", ALPHAFOLD_WEIGHTS_DIR,
             "--omegafold-data-dir", OMEGAFOLD_WEIGHTS_DIR,
+            "--rfdiffusion-motif-models-dir", RFDIFFUSION_WEIGHTS_DIR,
             "--write-endpoint-to-file", endpoint_file,
         ])
     time.sleep(sleep_seconds)

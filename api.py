@@ -14,6 +14,8 @@ import proteopt.alphafold
 import proteopt.proteinmpnn
 import proteopt.mock_tool
 import proteopt.omegafold
+import proteopt.rfdiffusion_motif
+
 from proteopt.common import serialize, deserialize
 
 app = Flask(__name__)
@@ -42,6 +44,7 @@ TOOL_CLASSES = [
     proteopt.alphafold.AlphaFold,
     proteopt.proteinmpnn.ProteinMPNN,
     proteopt.omegafold.OmegaFold,
+    proteopt.rfdiffusion_motif.RFDiffusionMotif,
 ]
 TOOLS = dict((cls.tool_name, cls) for cls in TOOL_CLASSES)
 

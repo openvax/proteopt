@@ -209,17 +209,12 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
 class RFDiffusionMotif(object):
     tool_name = "rfdiffusion_motif"
 
-    def __init__(
-            self,
-            models_dir=None,
-            base_config=OmegaConf.to_container(DEFAULT_CONFIG)):
-
-        self.conf = OmegaConf.create(base_config).copy()
-        if models_dir:
-            self.conf.inference.model_directory_path = models_dir
+    def __init__(self, models_dir : str):
+        self.conf = DEFAULT_CONFIG.copy()
+        self.conf.inference.model_directory_path = models_dir
 
     config_args = args_from_function_signature(
-        __init__, include=["config"])
+        __init__, include=["models_dir"])
     model_args = args_from_function_signature(
         __init__, exclude=list(config_args))
 
@@ -237,7 +232,10 @@ class RFDiffusionMotif(object):
             problems_iterator = iter(problems)
 
         for problem in problems_iterator:
-            result = self.run(problem)
+            if isinstance(problem, dict):
+                result = self.run(**problem)
+            else:
+                result = self.run(problem)
             results.append(result)
         return results
 
