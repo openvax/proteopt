@@ -1,7 +1,8 @@
 import collections
 import numpy
+import pickle
 
-from .common import set_residue_data
+from .common import set_residue_data, serialize, deserialize
 
 ConstrainedSegment = collections.namedtuple(
     "ConstrainedSegment", ["length", "chain", "resnums", "sequence"])

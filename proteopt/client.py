@@ -63,6 +63,7 @@ class Client():
                             exception = e
                             break
                     if result is not None:
+                        assert result.text is not None
                         return_payload = json.loads(result.text)
                     elif exception is not None:
                         return_payload = {

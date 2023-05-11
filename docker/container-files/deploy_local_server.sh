@@ -27,7 +27,7 @@ do
 			--rfdiffusion-motif-models-dir "$RFDIFFUSION_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &
 		pids+=("$!")
-		sleep 2
+		sleep 4
 		cat /tmp/proteopt_endpoint.txt >> "$ENDPOINTS_FILE"
 	done
 done

@@ -164,6 +164,8 @@ for tool_name, tool_class in TOOLS.items():
 if __name__ == '__main__':
     args = arg_parser.parse_args(sys.argv[1:])
 
+    logging.setLevel(logging.INFO)
+
     # tool name -> dict
     tool_configs = dict((tool_name, {}) for tool_name in TOOLS.keys())
     for (arg, (tool, parameter)) in arg_names_to_tool_configs.items():

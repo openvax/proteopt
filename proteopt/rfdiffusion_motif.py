@@ -1,4 +1,5 @@
 import collections
+import logging
 import tempfile
 import time
 
@@ -185,10 +186,10 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
                     if previous is None:
                         # Start segment
                         pieces.append("%s%d-" % (contig.chain, resnum))
-                    elif resnum != previous + 1:
+                    elif resnum not in (previous, previous + 1):
                         # End segment
                         pieces.append("%d" % previous)
-                        pieces.append(",%s%d-" % (contig.chain, resnum))
+                        pieces.append("/%s%d-" % (contig.chain, resnum))
                     previous = resnum
                 # End final segment
                 pieces.append("%d" % previous)
@@ -245,6 +246,7 @@ class RFDiffusionMotif(object):
 
         config = self.conf.copy()
         contigmap = make_contigmap_from_problem(problem)
+        logging.info("rfdiffusion contigmap", contigmap)
         config.contigmap.contigs = [contigmap]
 
         with tempfile.NamedTemporaryFile(suffix=".pdb") as input_pdb:
