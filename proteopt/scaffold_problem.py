@@ -39,7 +39,7 @@ def check_solution_sequence_is_valid(segments, sequence):
         # No possible solution
         return False, "Not a valid solution."
     if isinstance(segment, ChainBreak):
-        raise NotImplementedError("chain break")
+        return check_solution_sequence_is_valid(rest, sequence)
     assert False
 
 

@@ -57,3 +57,45 @@ def test_basic(caplog):
     assert construct.select("constrained_by_structure").ca.getSequence() == (
             structure_to_recapitulate.ca.getSequence())
     assert len(construct.select("unconstrained").ca) == 50
+
+def test_basic_with_nanobody(caplog):
+    caplog.set_level(logging.INFO)
+    handle = prody.parsePDB(os.path.join(DATA_DIR, "5m13.pdb"), model=1)
+    print(handle)
+
+    problem = ScaffoldProblem(handle)
+    problem.add_fixed_length_segment(length=20)
+    resid_ranges = [
+        (81, 101),
+        (126, 131),
+        (161, 190),
+        (246, 256),
+        (301, 328),
+    ]
+    for pair in resid_ranges:
+        problem.add_fixed_length_segment(
+            structure=handle.select(f"chain A and resid {pair[0]} to {pair[1]}"))
+        problem.add_fixed_length_segment(length=10)
+    problem.add_fixed_length_segment(length=30)
+    problem.add_contig_chain_break()
+    problem.add_fixed_length_segment(
+        structure=handle.select("chain B"))  # nanobody
+
+    start = time.time()
+    runner = rfdiffusion_motif.RFDiffusionMotif(
+        models_dir=util.RFDIFFUSION_WEIGHTS_DIR)
+    print(runner.conf)
+    print("*** Initialization time", time.time() - start)
+
+    start = time.time()
+    results = runner.run(
+        problem,
+        num=1)
+    print("*** Run time", (time.time() - start))
+
+    assert len(results) == 1
+    result = results.iloc[0]
+
+    assert result.structure.select("chain B").ca.getSequence() == handle.select("chain B").ca.getSequence()
+    designed_seq = result.structure.select("chain A").ca.getSequence()
+    print("Designed seq", designed_seq)
