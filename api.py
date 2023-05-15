@@ -7,7 +7,7 @@ import logging
 import socket
 import time
 
-from flask import Flask
+from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource, inputs
 
 import proteopt.alphafold
@@ -69,7 +69,7 @@ class Tool(Resource):
     def get_model(self, tool_name, args):
         tool_class = TOOLS[tool_name]
         args_dict = dict(self.configuration[tool_name])
-        cache_key = []
+        cache_key = [tool_name]
         for name, info in tool_class.model_args.items():
             value = getattr(args, name)
             cache_key.append((name, value))
@@ -133,7 +133,6 @@ class Tool(Resource):
                 "exception": (e.__class__.__name__, message),
             }
             return payload, 500
-
 
 api.add_resource(Tool, '/tool/<tool_name>')
 
