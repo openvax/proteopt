@@ -56,9 +56,9 @@ def test_basic():
     print("Subregion", subregion_prediction)
 
     inpainting_problem = ScaffoldProblem(subregion)
-    inpainting_problem.add_fixed_length_segment(structure=subregion.select("resid 45 to 50"))
+    inpainting_problem.add_segment(structure=subregion.select("resid 45 to 50"))
     inpainting_problem.add_variable_length_segment(3, 15)
-    inpainting_problem.add_fixed_length_segment(structure=subregion.select("resid 54 to 58"))
+    inpainting_problem.add_segment(structure=subregion.select("resid 54 to 58"))
 
     inpainting_results = inpainting_runner.run(inpainting_problem, num=10)
 

@@ -1,16 +1,34 @@
 import collections
+from collections import namedtuple
 import numpy
 import pickle
 
+import prody
+
 from .common import set_residue_data, serialize, deserialize
+from .alignment import smart_align
 
-ConstrainedSegment = collections.namedtuple(
-    "ConstrainedSegment", ["length", "chain", "resindices", "sequence"])
+class ConstrainedSegment(
+        namedtuple(
+            "ConstrainedSegment",
+            ["length", "chain", "resindices", "sequence", "motif_num"])):
+    def __eq__(self, other):
+        print(self, other)
+        return (
+            self.length == other.length and
+            self.chain == other.chain and
+            numpy.array_equal(self.resindices, other.resindices) and
+            self.sequence == other.sequence and
+            self.motif_num == other.motif_num
+        )
 
-GeneratedSegment = collections.namedtuple(
-    "GeneratedSegment", ["min_length", "max_length"])
+class UnconstrainedSegment(namedtuple("UnconstrainedSegment", ["length"])):
+    pass
 
-ChainBreak = collections.namedtuple("ChainBreak", [])
+class ChainBreak(namedtuple("ChainBreak", [])):
+    @property
+    def length(self):
+        return 0
 
 
 def check_solution_sequence_is_valid(segments, sequence):
@@ -31,12 +49,11 @@ def check_solution_sequence_is_valid(segments, sequence):
                         "expected: %s." % (sub_sequence, segment.sequence))
                 return False, msg
         return check_solution_sequence_is_valid(rest, sequence[segment.length:])
-    if isinstance(segment, GeneratedSegment):
-        for length in range(segment.min_length, segment.max_length + 1):
-            (code, msg) = check_solution_sequence_is_valid(rest, sequence[length:])
-            if code:
-                # Success
-                return True, ""
+    if isinstance(segment, UnconstrainedSegment):
+        (code, msg) = check_solution_sequence_is_valid(rest, sequence[segment.length:])
+        if code:
+            # Success
+            return True, ""
         # No possible solution
         return False, "Not a valid solution."
     if isinstance(segment, ChainBreak):
@@ -58,12 +75,6 @@ class ScaffoldProblem(object):
             handle.setResnums(handle.getResindices() + 1)
         return handle
 
-    def is_fixed_length(self):
-        return all([
-            not isinstance(s, GeneratedSegment)
-            for s in self.segments
-        ])
-
     def check_solution_sequence_is_valid(self, sequence, ipdb_on_error=False):
         code, msg = check_solution_sequence_is_valid(self.segments, sequence)
         if code:
@@ -75,28 +86,24 @@ class ScaffoldProblem(object):
             msg, sequence, self.segments))
 
     def annotate_solution(self, structure):
-        if not self.is_fixed_length():
-            raise ValueError("No defined length")
-
         masks = collections.defaultdict(list)
         data_items = collections.defaultdict(list)
         for (segment_num, segment) in enumerate(self.segments):
-            if isinstance(segment, ConstrainedSegment):
+            if isinstance(segment, (UnconstrainedSegment, ConstrainedSegment)):
                 mask_item = {
-                    "constrained_by_structure": segment.resindices is not None,
-                    "constrained_by_sequence": segment.sequence is not None,
-                    "unconstrained": (
-                            segment.resindices is None
-                            and segment.sequence is None)
+                    "constrained_by_structure": (
+                        isinstance(segment, ConstrainedSegment) and
+                        segment.resindices is not None),
+                    "constrained_by_sequence": (
+                        isinstance(segment, ConstrainedSegment) and
+                        segment.sequence is not None),
+                    "unconstrained": isinstance(segment, UnconstrainedSegment),
                 }
                 for (k, v) in mask_item.items():
                     masks[k].extend([v] * segment.length)
 
                 data_items["scaffold_problem_segment"].extend(
                     [segment_num] * segment.length)
-
-            elif isinstance(segment, GeneratedSegment):
-                assert False
             else:
                 continue
         for (k, v) in masks.items():
@@ -108,12 +115,13 @@ class ScaffoldProblem(object):
         data_items.update(masks)
         return data_items
 
-    def add_fixed_length_segment(
+    def add_segment(
             self,
-            length=None,
+            length=None,     # specify only length for an unconstrained segment
             structure=None,  # constrain by coordinates
-            sequence=None,  # constrain by sequence if specified
+            sequence=None,   # constrain by sequence if specified
             sequence_from_structure=True,  # if structure specified use sequence from that
+            motif_num=None,  # for grouping motifs
     ):
         # Add a segment with a fixed structure, sequence, or both.
         # sub_structure must be taken from self.structure (i.e. resindices must
@@ -141,67 +149,97 @@ class ScaffoldProblem(object):
             assert len(sequence) == length
         if length is None:
             raise ValueError("must specify length, structure, or sequence")
-        self.segments.append(ConstrainedSegment(length, chain, resindices, sequence))
-        return self
 
-    def add_variable_length_segment(self, min_length, max_length):
-        if min_length == max_length:
-            return self.add_fixed_length_segment(length=min_length)
-        self.segments.append(GeneratedSegment(min_length, max_length))
+        segment = None
+        if resindices is None and sequence is None:
+            segment = UnconstrainedSegment(length=length)
+        else:
+            segment = ConstrainedSegment(
+                length, chain, resindices, sequence, motif_num=motif_num)
+
+        self.segments.append(segment)
         return self
 
     def add_contig_chain_break(self):
         self.segments.append(ChainBreak())
         return self
 
-    def fixed_length_problems(self, num_to_sample=None):
-        variable_segments_to_sample = {}
-        total_possible = 1
-        for (i, segment) in enumerate(self.segments):
-            if isinstance(segment, GeneratedSegment):
-                variable_segments_to_sample[i] = segment
-                total_possible *= segment.max_length - segment.min_length + 1
+    def evaluate_solution(self, designed_structure, prefix=""):
+        designed_structure = designed_structure.copy()  # resets resindices
+        constrained_segments = [
+            c for c in self.segments if isinstance(c, ConstrainedSegment)
+        ]
+        motif_nums = set()
+        for segment in constrained_segments:
+            if segment.motif_num is None:
+                raise ValueError("No motif_num specified for %s" % segment)
+            motif_nums.add(segment.motif_num)
+        motif_nums = sorted(motif_nums)
 
-        if num_to_sample is None:
-            num_to_sample = total_possible
-        if num_to_sample > total_possible:
-            raise ValueError("Can't sample %d, total possible is %d" % (
-                num_to_sample, total_possible))
+        results = collections.defaultdict(list)
+        for motif_num in motif_nums:
+            # There must be a more efficient way to do this
+            # Note: this is complicated because order matters
+            target_resindices = []
+            for segment in constrained_segments:
+                if segment.motif_num == motif_num:
+                    target_resindices.extend(segment.resindices)
 
-        if variable_segments_to_sample:
-            already_sampled = set()
-            for loops in range(1000000):
-                # Pick a segment to sample
-                i = numpy.random.choice(list(variable_segments_to_sample))
-                segment = variable_segments_to_sample[i]
-                sampled_length = numpy.random.randint(
-                    segment.min_length, segment.max_length + 1)
-                new_object = ScaffoldProblem(self.structure)
-                new_object.segments = (
-                        self.segments[:i]
-                        + [
-                            ConstrainedSegment(sampled_length, None, None, None)
-                        ]
-                        + self.segments[i + 1:])
-                fully_fixed = next(new_object.fixed_length_problems())
-                all_sampled_lengths = tuple(
-                    fully_fixed.segments[i]
-                    for i in variable_segments_to_sample.keys())
+            reference_target_pieces = []
+            for idx in target_resindices:
+                reference_target_piece = self.structure.select(
+                    "resindex %d" % idx).copy()
+                reference_target_pieces.append(reference_target_piece)
+            reference_target = combine_atom_groups(reference_target_pieces)
 
-                if all_sampled_lengths not in already_sampled:
-                    already_sampled.add(all_sampled_lengths)
-                    yield fully_fixed
-                if num_to_sample and len(already_sampled) == num_to_sample:
-                    break
-            else:
-                raise ValueError("Too many iterations")
-        else:
-            # We are already a fixed-length problem
-            yield self
+            #import ipdb ; ipdb.set_trace()
+
+            designed_target_pieces = []
+            designed_resindices = designed_structure.getResindices()
+            numpy.testing.assert_equal(
+                designed_structure.ca.getResindices(),
+                numpy.arange(max(designed_resindices) + 1)
+            )
+            current_index = 0
+            for segment in self.segments:
+                if isinstance(segment, ConstrainedSegment):
+                    new_piece = designed_structure.select(
+                        f"resindex {current_index} to {current_index + segment.length - 1}"
+                    ).copy()
+                    designed_target_pieces.append(new_piece)
+                current_index += segment.length
+            designed_target = combine_atom_groups(designed_target_pieces)
+
+            numpy.testing.assert_equal(len(reference_target.ca), len(designed_target.ca))
+            numpy.testing.assert_equal(len(reference_target), len(designed_target))
+
+            ca_rmsd = smart_align(reference_target.ca, designed_target.ca).rmsd
+            all_atom_rmsd = smart_align(reference_target, designed_target).rmsd
+            results[f"motif_{motif_num}_ca_rmsd"] = ca_rmsd
+            results[f"motif_{motif_num}_all_atom_rmsd"] = all_atom_rmsd
+
+        renamed_results = {}
+        for (key, value) in results.items():
+            renamed_results[prefix + key] = value
+
+        return renamed_results
 
     def __repr__(self):
         return(
             "<ScaffoldProblem segments=\n%s\n>" % "\n".join(str(s) for s in self.segments))
 
+    def __eq__(self, other):
+        return (
+            self.structure == other.structure and
+            self.segments == other.segments)
+
     def __str__(self):
         return repr(self)
+
+
+def combine_atom_groups(pieces):
+    result = pieces[0].copy()
+    for piece in pieces[1:]:
+        result += piece
+        result._title = "Combined"
+    return result

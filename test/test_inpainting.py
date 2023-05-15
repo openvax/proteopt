@@ -21,9 +21,9 @@ def test_basic():
     start = time.time()
     spec = (
         rfdesign_inpainting.ScaffoldProblem(handle)
-        .add_fixed_length_segment(structure=handle.select("chain A and resid 1 to 21"))
+        .add_segment(structure=handle.select("chain A and resid 1 to 21"))
         .add_variable_length_segment(10, 20)
-        .add_fixed_length_segment(structure=handle.select("chain A and resid 34 to 150")))
+        .add_segment(structure=handle.select("chain A and resid 34 to 150")))
 
     results = runner.run(
         spec,
@@ -49,10 +49,10 @@ def test_basic():
 
     spec = (
         rfdesign_inpainting.ScaffoldProblem(handle)
-        .add_fixed_length_segment(structure=handle.select("chain A and resid 1 to 21"))
-        .add_fixed_length_segment(15)
-        .add_fixed_length_segment(structure=handle.select("chain A and resid 34 to 150"))
-        .add_fixed_length_segment(1)
+        .add_segment(structure=handle.select("chain A and resid 1 to 21"))
+        .add_segment(15)
+        .add_segment(structure=handle.select("chain A and resid 34 to 150"))
+        .add_segment(1)
     )
 
     results = runner.run(

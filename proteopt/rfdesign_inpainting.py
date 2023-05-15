@@ -11,7 +11,7 @@ from rfdesign.inpainting import inpaint
 
 from .common import set_residue_data
 from .scaffold_problem import (
-    ScaffoldProblem, GeneratedSegment, ConstrainedSegment, ChainBreak)
+    ScaffoldProblem, UnconstrainedSegment, ConstrainedSegment, ChainBreak)
 
 
 def make_contigs_argument(problem : ScaffoldProblem):
@@ -52,7 +52,7 @@ def make_contigs_argument(problem : ScaffoldProblem):
 
             else:
                 contigs.append("%d," % segment.length)
-        elif isinstance(segment, GeneratedSegment):
+        elif isinstance(segment, UnconstrainedSegment):
             contigs.append("%d-%d" % (segment.min_length, segment.max_length))
             contigs.append(
                 ",0 " if isinstance(next_contig, ChainBreak) else ",")
@@ -154,8 +154,7 @@ class RFDesignInpainting(object):
                 is_bool=True)
 
             # Extra masks from problem
-            if problem.is_fixed_length():
-                problem.annotate_solution(row.structure)
+            problem.annotate_solution(row.structure)
 
         # Add sequences to dataframe
         def get_sequence(single_chain_ca):

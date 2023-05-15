@@ -16,15 +16,13 @@ def test_pickle():
 
     problem = (
         ScaffoldProblem(handle)
-        .add_fixed_length_segment(10)
-        .add_fixed_length_segment(
+        .add_segment(10)
+        .add_segment(
             structure=handle.select("chain A and resid 35 to 137"))
-        .add_fixed_length_segment(10))
-
-    assert list(problem.fixed_length_problems()) == [problem]
+        .add_segment(10))
 
     problem2 = pickle.loads(pickle.dumps(problem))
-    assert list(problem2.fixed_length_problems()) == [problem2]
+    assert problem == problem2
 
 
 def test_basic():
@@ -33,41 +31,19 @@ def test_basic():
 
     problem = (
         ScaffoldProblem(handle)
-        .add_fixed_length_segment(10)
-        .add_fixed_length_segment(
-            structure=handle.select("chain A and resid 100 to 110"))
-        .add_fixed_length_segment(10))
-    assert list(problem.fixed_length_problems()) == [problem]
+        .add_segment(10)
+        .add_segment(
+            structure=handle.select("chain C and resid 57 to 65"),
+            motif_num=0)
+        .add_segment(5)
+        .add_segment(
+            structure=handle.select("chain C and resid 70 to 75"),
+            motif_num=0)
+        .add_segment(10))
 
-    problem = (
-        ScaffoldProblem(handle)
-        .add_fixed_length_segment(structure=handle.select("chain B and resid 35 to 137"))
-        .add_variable_length_segment(10, 15)
-        .add_variable_length_segment(30, 34)
-        .add_fixed_length_segment(structure=handle.select("chain B and resid 208 to 212"))
-        .add_fixed_length_segment(50)
-        .add_fixed_length_segment(structure=handle.select("chain B and resid 200 to 201"))
-        .add_variable_length_segment(100, 110))
-
-    all_fixed_length = list(problem.fixed_length_problems())
-    assert len(all_fixed_length) == 6 * 5 * 11
-
-    def do_assertions(fixed_problem):
-        assert fixed_problem.is_fixed_length()
-        segments = fixed_problem.segments
-
-        assert segments[0].length == 103
-        assert 10 <= segments[1].length <= 15
-        assert 30 <= segments[2].length <= 34
-        assert segments[3].length == 5
-        assert segments[4].length == 50
-        assert segments[5].length == 2
-        assert 100 <= segments[6].length <= 110
-
-    for fixed_problem in all_fixed_length:
-        do_assertions(fixed_problem)
-
-    some_fixed_length = list(problem.fixed_length_problems(5))
-    assert len(some_fixed_length) == 5
-    for fixed_problem in some_fixed_length:
-        do_assertions(fixed_problem)
+    fake_solution = handle.select("chain C and resid 47 to 75").copy()
+    fake_solution.setCoords(fake_solution.getCoords() + 800)
+    evaluation = problem.evaluate_solution(fake_solution, prefix="fake_")
+    print(evaluation)
+    assert evaluation["fake_motif_0_ca_rmsd"] < 1e-4
+    assert evaluation["fake_motif_0_all_atom_rmsd"] < 1e-4

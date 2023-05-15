@@ -23,12 +23,12 @@ def test_basic(caplog):
     print(len(structure_to_recapitulate.ca), structure_to_recapitulate.ca.getSequence())
 
     problem = ScaffoldProblem(handle)
-    problem.add_fixed_length_segment(length=20)
-    problem.add_fixed_length_segment(
+    problem.add_segment(length=20)
+    problem.add_segment(
         structure=structure_to_recapitulate,
         sequence_from_structure=True
     )
-    problem.add_fixed_length_segment(length=30)
+    problem.add_segment(length=30)
 
     start = time.time()
     runner = rfdiffusion_motif.RFDiffusionMotif(
@@ -64,7 +64,7 @@ def test_basic_with_nanobody(caplog):
     print(handle)
 
     problem = ScaffoldProblem(handle)
-    problem.add_fixed_length_segment(length=20)
+    problem.add_segment(length=20)
     resid_ranges = [
         (81, 101),
         (126, 131),
@@ -73,12 +73,12 @@ def test_basic_with_nanobody(caplog):
         (301, 328),
     ]
     for pair in resid_ranges:
-        problem.add_fixed_length_segment(
+        problem.add_segment(
             structure=handle.select(f"chain A and resid {pair[0]} to {pair[1]}"))
-        problem.add_fixed_length_segment(length=10)
-    problem.add_fixed_length_segment(length=30)
+        problem.add_segment(length=10)
+    problem.add_segment(length=30)
     problem.add_contig_chain_break()
-    problem.add_fixed_length_segment(
+    problem.add_segment(
         structure=handle.select("chain B"))  # nanobody
 
     start = time.time()

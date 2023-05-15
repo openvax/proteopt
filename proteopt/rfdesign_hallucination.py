@@ -11,13 +11,10 @@ from .common import set_residue_data
 from rfdesign.hallucination import hallucinate
 
 from .scaffold_problem import (
-    ScaffoldProblem, GeneratedSegment, ConstrainedSegment, ChainBreak)
+    ScaffoldProblem, UnconstrainedSegment, ConstrainedSegment, ChainBreak)
 
 
 def make_args_from_problem(problem: ScaffoldProblem):
-    if not problem.is_fixed_length():
-        raise ValueError("Only defined length problems supported")
-
     mask = []
     force_aa_hal = []
 
@@ -49,7 +46,7 @@ def make_args_from_problem(problem: ScaffoldProblem):
             else:
                 mask.append("%d" % contig.length)
             hallucinated_index += contig.length
-        elif isinstance(contig, GeneratedSegment):
+        elif isinstance(contig, UnconstrainedSegment):
             raise NotImplementedError("VariableLengthSegment")
         elif isinstance(contig, ChainBreak):
             raise NotImplementedError("chain break")

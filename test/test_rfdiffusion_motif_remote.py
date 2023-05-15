@@ -29,12 +29,12 @@ def test_basic(running_server_endpoint):
     print(len(structure_to_recapitulate.ca), structure_to_recapitulate.ca.getSequence())
 
     problem = ScaffoldProblem(handle)
-    problem.add_fixed_length_segment(length=20)
-    problem.add_fixed_length_segment(
+    problem.add_segment(length=20)
+    problem.add_segment(
         structure=structure_to_recapitulate,
         sequence_from_structure=True
     )
-    problem.add_fixed_length_segment(length=30)
+    problem.add_segment(length=30)
 
     start = time.time()
     results = runner.run(

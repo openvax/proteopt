@@ -1,6 +1,10 @@
+from collections import namedtuple
+
 import numpy
 import pandas
 import prody
+
+AlignmentResult = namedtuple("AlignmentResult", ["aligned", "rmsd"])
 
 # equivalent atoms (symmetries)
 # Taken from alphafold
@@ -23,6 +27,7 @@ def alternative_atom_name(resname, atom_name):
         return None
     pair, = matching
     return pair[0] if pair[0] != atom_name else pair[1]
+
 
 
 def smart_align(
@@ -102,8 +107,6 @@ def smart_align(
         indices_into_part_of_mobile = numpy.arange(len(part_of_mobile_to_align))
 
     if fix_symmetries:
-        swappable_indices = []  # these index into indices_into_part_of_mobile
-
         df = pandas.DataFrame({
             "resindex": part_of_mobile_to_align.getResindices(),
             "resname": part_of_mobile_to_align.getResnames(),
@@ -163,4 +166,4 @@ def smart_align(
 
     new_mobile = mobile.copy()
     best_transformation.apply(new_mobile)
-    return (new_mobile, best_rmsd)
+    return AlignmentResult(new_mobile, best_rmsd)

@@ -24,14 +24,14 @@ def test_basic():
     print(len(structure_to_recapitulate.ca), structure_to_recapitulate.ca.getSequence())
 
     problem = ScaffoldProblem(handle)
-    problem.add_fixed_length_segment(length=16)
-    problem.add_fixed_length_segment(sequence="DPSK", length=4)
-    problem.add_fixed_length_segment(
+    problem.add_segment(length=16)
+    problem.add_segment(sequence="DPSK", length=4)
+    problem.add_segment(
         structure=structure_to_recapitulate,
         sequence=structure_to_recapitulate.ca.getSequence(),
     )
-    problem.add_fixed_length_segment(sequence="VTLADAGF")
-    problem.add_fixed_length_segment(length=22)
+    problem.add_segment(sequence="VTLADAGF")
+    problem.add_segment(length=22)
 
     start = time.time()
     runner = rfdesign_hallucination.RFDesignHallucination()

@@ -20,7 +20,7 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
 
 from .scaffold_problem import (
-    ScaffoldProblem, GeneratedSegment, ConstrainedSegment, ChainBreak)
+    ScaffoldProblem, UnconstrainedSegment, ConstrainedSegment, ChainBreak)
 
 # From RFDiffusion
 def make_deterministic(seed=0):
@@ -168,36 +168,28 @@ scaffoldguided:
 DEFAULT_CONFIG = OmegaConf.create(DEFAUT_CONFIG_YAML)
 
 def make_contigmap_from_problem(problem: ScaffoldProblem):
-    if not problem.is_fixed_length():
-        raise ValueError("Only defined length problems supported")
-
     contigs = []
     for (i, contig) in enumerate(problem.segments):
         if isinstance(contig, ConstrainedSegment):
-            if contig.sequence is not None:
-                if contig.resindices is None:
-                    raise ValueError(
-                        "Cannot constrain sequence without also constraining structure")
+            if contig.resindices is None:
+                raise NotImplementedError("Must constrain structure")
 
-            if contig.resindices is not None:
-                previous = None
-                pieces = []
-                for resindex in contig.resindices + 1:
-                    if previous is None:
-                        # Start segment
-                        pieces.append("%s%d-" % (contig.chain, resindex))
-                    elif resindex != previous + 1:
-                        # End segment
-                        pieces.append("%d" % previous)
-                        pieces.append("/%s%d-" % (contig.chain, resindex))
-                    previous = resindex
-                # End final segment
-                pieces.append("%d" % previous)
-                contigs.append("".join(pieces))
-            else:
-                contigs.append(f"{contig.length}-{contig.length}")
-        elif isinstance(contig, GeneratedSegment):
-            raise NotImplementedError("VariableLengthSegment")
+            previous = None
+            pieces = []
+            for resindex in contig.resindices + 1:
+                if previous is None:
+                    # Start segment
+                    pieces.append("%s%d-" % (contig.chain, resindex))
+                elif resindex != previous + 1:
+                    # End segment
+                    pieces.append("%d" % previous)
+                    pieces.append("/%s%d-" % (contig.chain, resindex))
+                previous = resindex
+            # End final segment
+            pieces.append("%d" % previous)
+            contigs.append("".join(pieces))
+        elif isinstance(contig, UnconstrainedSegment):
+            contigs.append(f"{contig.length}-{contig.length}")
         elif isinstance(contig, ChainBreak):
             contigs.append("0 ")
         else:
