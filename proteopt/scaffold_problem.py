@@ -192,8 +192,6 @@ class ScaffoldProblem(object):
                 reference_target_pieces.append(reference_target_piece)
             reference_target = combine_atom_groups(reference_target_pieces)
 
-            #import ipdb ; ipdb.set_trace()
-
             designed_target_pieces = []
             designed_resindices = designed_structure.getResindices()
             numpy.testing.assert_equal(
@@ -202,7 +200,7 @@ class ScaffoldProblem(object):
             )
             current_index = 0
             for segment in self.segments:
-                if isinstance(segment, ConstrainedSegment):
+                if isinstance(segment, ConstrainedSegment) and segment.motif_num == motif_num:
                     new_piece = designed_structure.select(
                         f"resindex {current_index} to {current_index + segment.length - 1}"
                     ).copy()
