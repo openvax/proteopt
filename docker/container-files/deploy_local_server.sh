@@ -3,7 +3,7 @@ set -x
 
 NUM="${1:--1}"
 HOST="${2:-127.0.0.1}"
-PORT="${2:-0}"
+PORT="${3:-0}"
 
 ALPHAFOLD_WEIGHTS_DIR="/data/static/alphafold-params/"
 OMEGAFOLD_WEIGHTS_DIR="/data/static/omegafold_ckpt/"
