@@ -186,7 +186,7 @@ RUN cd /data/static/openfold \
     && /root/miniconda3/envs/design-env/bin/pip install -e ~/openfold
 
 # RFDiffusion
-RUN echo this-is-here-just-to-force-a-rebuild && cd /data/static \
+RUN cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
     && cd RFDiffusion \
     && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
@@ -248,5 +248,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
 RUN mkdir -p /root/.jupyter
 COPY container-files/jupyter_server_config.json /root/.jupyter/
 
-EXPOSE 8888
+RUN cd /root/proteopt/docker && bash update.sh
+
+EXPOSE 8888 9999
 CMD ["/root/miniconda3/envs/design-env/bin/jupyter" , "lab", "--ip=0.0.0.0", "--allow-root"]
