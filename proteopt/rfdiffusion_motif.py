@@ -210,9 +210,11 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
 class RFDiffusionMotif(object):
     tool_name = "rfdiffusion_motif"
 
-    def __init__(self, models_dir : str):
+    def __init__(self, models_dir : str, num_timesteps : Optional[int] = None):
         self.conf = DEFAULT_CONFIG.copy()
         self.conf.inference.model_directory_path = models_dir
+        if num_timesteps is not None:
+            self.conf.diffuser.T = num_timesteps
 
     config_args = args_from_function_signature(
         __init__, include=["models_dir"])

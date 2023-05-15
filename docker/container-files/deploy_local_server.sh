@@ -19,6 +19,7 @@ for i in $(seq $NUM)
 do
 	for j in $(seq $NUM_PER)
 	do
+		rm -f /tmp/proteopt_endpoint.txt
 		CUDA_VISIBLE_DEVICES=$(expr $i - 1) python \
 			~/proteopt/api.py \
 			--debug \
@@ -27,7 +28,11 @@ do
 			--rfdiffusion-motif-models-dir "$RFDIFFUSION_WEIGHTS_DIR" \
 			--write-endpoint-to-file /tmp/proteopt_endpoint.txt &
 		pids+=("$!")
-		sleep 4
+		until [ -f /tmp/proteopt_endpoint.txt ]
+		do
+			sleep 1
+		done
+		sleep 1
 		cat /tmp/proteopt_endpoint.txt >> "$ENDPOINTS_FILE"
 	done
 done

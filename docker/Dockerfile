@@ -186,7 +186,7 @@ RUN cd /data/static/openfold \
     && /root/miniconda3/envs/design-env/bin/pip install -e ~/openfold
 
 # RFDiffusion
-RUN cd /data/static \
+RUN echo this-is-here-just-to-force-a-rebuild && cd /data/static \
     && git clone --branch main https://github.com/timodonnell/RFDiffusion.git \
     && cd RFDiffusion \
     && git remote add upstream https://github.com/RosettaCommons/RFDiffusion.git \
@@ -240,6 +240,8 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     rmsd \
     ipdb \
     ipython \
+    optuna \
+    optuna-dashboard \
     && conda clean -afy \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
