@@ -2,7 +2,7 @@ set -e
 set -x 
 
 NUM="${1:--1}"
-PORT="${1:-0}"
+PORT="${2:-0}"
 
 ALPHAFOLD_WEIGHTS_DIR="/data/static/alphafold-params/"
 OMEGAFOLD_WEIGHTS_DIR="/data/static/omegafold_ckpt/"
