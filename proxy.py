@@ -33,7 +33,8 @@ class Proxy(Resource):
                 raise ValueError("No endpoints")
             cls.client = proteopt.client.Client(
                 endpoints=[e + "/tool" for e in cls.endpoints],
-                max_retries=cls.max_retries)
+                max_retries=cls.max_retries,
+                extra_parallelism_factor=1)
         return cls.client
 
     def get(self, action, name):
