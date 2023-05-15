@@ -138,15 +138,16 @@ if __name__ == '__main__':
             ]
             sub_args.extend(args.launch_args)
             sub_args.extend(["--write-endpoint-to-file", endpoint_file])
+            environ = os.environ.copy()
             if set_cuda_visible_devices:
-                sub_args.extend(["--cuda-visible-devices", str(i)])
+                environ["CUDA_VISIBLE_DEVICES"] = str(i)
             print(f"Launching API server {i} / {num_to_launch} with args:")
             print(sub_args)
 
             logfile = os.path.join(work_dir.name, f"log.{i}.txt")
             logfile_fd = open(logfile, "w+b")
             process = subprocess.Popen(
-                sub_args, stderr=logfile_fd, stdout=logfile_fd)
+                sub_args, stderr=logfile_fd, stdout=logfile_fd, env=environ)
             while process.poll() is None and not os.path.exists(endpoint_file):
                 time.sleep(0.1)
             try:
@@ -185,7 +186,6 @@ if __name__ == '__main__':
         print("Wrote", args.write_endpoint_to_file)
 
     def cleanup(sig, frame):
-        import ipdb ; ipdb.set_trace()
         if args.debug:
             print("Dumping logs.")
             for g in glob.glob(os.path.join(work_dir.name, "*.txt")):

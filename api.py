@@ -149,9 +149,6 @@ arg_parser.add_argument(
     default=False,
     action="store_true")
 
-arg_parser.add_argument(
-    "--cuda-visible-devices")
-
 arg_parser.add_argument("--host", default="127.0.0.1")
 arg_parser.add_argument("--write-endpoint-to-file")
 arg_parser.add_argument("--port", type=int)
@@ -181,11 +178,12 @@ if __name__ == '__main__':
             print("\t%15s = %15s" % (k, v))
         print()
 
+    print("Environment variables:")
+    for (k, v) in os.environ.items():
+        print("\t%15s = %15s" % (k, v))
+
     Tool.configuration = dict(tool_configs)
     Tool.configuration["model_cache_size"] = args.model_cache_size
-
-    if args.cuda_visible_devices:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
 
     port = args.port
     if not port:

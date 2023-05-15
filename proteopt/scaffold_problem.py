@@ -185,10 +185,19 @@ class ScaffoldProblem(object):
                 if segment.motif_num == motif_num:
                     target_resindices.extend(segment.resindices)
 
-            reference_target_pieces = []
+            target_resindices_start_stop = []
             for idx in target_resindices:
+                if (
+                        target_resindices_start_stop and
+                        idx == target_resindices_start_stop[-1][1] + 1):
+                    target_resindices_start_stop[-1][1] = idx
+                else:
+                    target_resindices_start_stop.append([idx, idx])
+
+            reference_target_pieces = []
+            for (start, stop) in target_resindices_start_stop:
                 reference_target_piece = self.structure.select(
-                    "resindex %d" % idx).copy()
+                    "resindex %d to %d" % (start, stop)).copy()
                 reference_target_pieces.append(reference_target_piece)
             reference_target = combine_atom_groups(reference_target_pieces)
 

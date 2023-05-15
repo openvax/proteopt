@@ -10,7 +10,7 @@ from .remote_model import RemoteModel
 
 
 class Client():
-    def __init__(self, endpoints, max_retries=2):
+    def __init__(self, endpoints, max_retries=2, extra_parallelism_factor=2):
         self.endpoints = endpoints
         self.work_queue = Queue()
         self.max_retries = max_retries
@@ -22,7 +22,7 @@ class Client():
             info = session.get(full_endpoint)
             if info.status_code != 200:
                 raise IOError(f"Couldn't get info for {full_endpoint}: {info.status_code} {info.text}")
-            max_parallelism = info.json()['max_parallelism']
+            max_parallelism = info.json()['max_parallelism'] * extra_parallelism_factor
             print(f"Client: endpoint {endpoint} will use max_parallelism {max_parallelism}")
             for i in range(max_parallelism):
                 thread = threading.Thread(
