@@ -2,6 +2,7 @@ set -e
 set -x 
 
 NUM="${1:--1}"
+PORT="${1:-0}"
 
 ALPHAFOLD_WEIGHTS_DIR="/data/static/alphafold-params/"
 OMEGAFOLD_WEIGHTS_DIR="/data/static/omegafold_ckpt/"
@@ -13,6 +14,7 @@ rm -f /tmp/proteopt_endpoint.txt
 python \
     ~/proteopt/proxy.py \
     --debug \
+    --port $PORT \
     --launch-servers $NUM \
     --write-endpoint-to-file $ENDPOINTS_FILE \
     --launch-args \
