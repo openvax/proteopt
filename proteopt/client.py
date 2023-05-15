@@ -14,15 +14,26 @@ class Client():
         self.endpoints = endpoints
         self.work_queue = Queue()
         self.max_retries = max_retries
-
         self.threads = []
+
         for endpoint in endpoints:
-            thread = threading.Thread(
-                target=self.worker_thread,
-                name="thread_%s" % endpoint,
-                daemon=True,
-                args=(endpoint,))
-            thread.start()
+            session = requests.Session()
+            full_endpoint = endpoint + "/info"
+            info = session.get(full_endpoint)
+            if info.status_code != 200:
+                raise IOError(f"Couldn't get info for {full_endpoint}: {info.status_code} {info.text}")
+            max_parallelism = info.json()['max_parallelism']
+            print(f"Client: endpoint {endpoint} will use max_parallelism {max_parallelism}")
+            for i in range(max_parallelism):
+                thread = threading.Thread(
+                    target=self.worker_thread,
+                    name=f"thread_{i}_{endpoint}",
+                    daemon=True,
+                    args=(endpoint,))
+                self.threads.append(thread)
+                thread.start()
+
+        self.max_parallelism = max(1, len(self.threads))
 
     def shutdown(self):
         work_queue = self.work_queue

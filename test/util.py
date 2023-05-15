@@ -34,6 +34,35 @@ def run_server(port, sleep_seconds=3.0):
     os.unlink(endpoint_file)
     return (process, endpoint + "/tool")
 
+
+def run_proxy(port):
+    endpoint_file = "/tmp/proteopt_endpoint.txt"
+    try:
+        os.unlink(endpoint_file)
+    except IOError:
+        pass
+    process = subprocess.Popen(
+        [
+            "python",
+            os.path.join(REPO_ROOT_DIR, "proxy.py"),
+            "--debug",
+            "--no-cleanup",
+            "--port", str(port),
+            "--launch-servers", "3",
+            "--write-endpoint-to-file", endpoint_file,
+            "--launch-args",
+            "--mock-server-name", 'test-server',
+            "--alphafold-data-dir", ALPHAFOLD_WEIGHTS_DIR,
+            "--omegafold-data-dir", OMEGAFOLD_WEIGHTS_DIR,
+            "--rfdiffusion-motif-models-dir", RFDIFFUSION_WEIGHTS_DIR,
+        ])
+    while process.poll() is None and not os.path.exists(endpoint_file):
+        time.sleep(0.1)
+    with open(endpoint_file) as fd:
+        endpoint = fd.read().strip()
+    os.unlink(endpoint_file)
+    return (process, endpoint + "/tool")
+
 @pytest.fixture
 def running_server_endpoint(port=0, sleep_seconds=0):
     (process, endpoint) = run_server(port)
@@ -55,3 +84,9 @@ def multiple_running_server_endpoints(ports=(0, 0), sleep_seconds=0):
     yield endpoints
     for process in processes:
         process.terminate()
+
+@pytest.fixture
+def running_proxy_endpoint(port=0):
+    (process, endpoint) = run_proxy(port)
+    yield endpoint
+    process.terminate()

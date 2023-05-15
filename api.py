@@ -91,7 +91,12 @@ class Tool(Resource):
         return model
 
     def get(self, tool_name):
-        return str(self.MODEL_CACHE.keys())
+        result = {
+            'description': 'runner',
+            'max_parallelism': 1,
+            'model_cache_keys': list(self.MODEL_CACHE.keys()),
+        }
+        return result, 200
 
     def post(self, tool_name):
         tool_class = TOOLS[tool_name]
