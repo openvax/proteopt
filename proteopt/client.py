@@ -10,7 +10,7 @@ from .remote_model import RemoteModel
 
 
 class Client():
-    def __init__(self, endpoints, max_retries=2, extra_parallelism_factor=2):
+    def __init__(self, endpoints, max_retries=2, extra_parallelism_factor=1):
         self.endpoints = endpoints
         self.work_queue = Queue()
         self.max_retries = max_retries

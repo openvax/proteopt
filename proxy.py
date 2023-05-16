@@ -41,11 +41,13 @@ class Proxy(Resource):
         if action == "add-endpoint":
             endpoint = request.args.get('endpoint')
             self.endpoints.add(endpoint)
+            self.client = None
             return f"Added endpoint {endpoint}"
         elif action == "remove-endpoint":
             endpoint = request.args.get('endpoint')
             if endpoint in self.endpoints:
                 self.endpoints.remove(endpoint)
+                self.client = None
                 return f"Removed endpoint {endpoint}"
             else:
                 return f"No such endpoint {endpoint}"
@@ -55,16 +57,13 @@ class Proxy(Resource):
             return "\n".join(lines)
         elif action == "clear":
             self.endpoints.clear()
+            self.client = None
             return "Cleared endpoints"
         return str(self.MODEL_CACHE.keys())
 
 class Tool(Resource):
     def get(self, tool_name):
-        try:
-            max_parallelism = Proxy.get_client().max_parallelism
-        except Exception as e:
-            logging.warning("Couldn't get parallelism: %s", e)
-            max_parallelism = 8
+        max_parallelism = Proxy.get_client().max_parallelism
         result = {
             'description': 'proxy',
             'endpoints': sorted(Proxy.endpoints),
