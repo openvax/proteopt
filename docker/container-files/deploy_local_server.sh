@@ -26,4 +26,4 @@ python \
     --alphafold-data-dir "$ALPHAFOLD_WEIGHTS_DIR" \
     --omegafold-data-dir "$OMEGAFOLD_WEIGHTS_DIR" \
     --rfdiffusion-motif-models-dir "$RFDIFFUSION_WEIGHTS_DIR" \
-    --rfdiffusion-motif-num-processes 2
+    --rfdiffusion-motif-num-processes 0

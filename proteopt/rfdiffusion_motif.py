@@ -203,7 +203,7 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
 class RFDiffusionMotif(object):
     tool_name = "rfdiffusion_motif"
 
-    def __init__(self, models_dir : str, num_processes : int = 1, num_timesteps : Optional[int] = None):
+    def __init__(self, models_dir : str, num_processes : int = 0, num_timesteps : Optional[int] = None):
         self.num_processes = num_processes
         self.conf = DEFAULT_CONFIG.copy()
         self.conf.inference.model_directory_path = models_dir
@@ -221,37 +221,32 @@ class RFDiffusionMotif(object):
             show_progress=False,
             items_per_request=None):
 
-        context = multiprocessing.get_context("spawn")
-        dicts = [
-            p if isinstance(p, dict) else {"problem": p} for p in problems
-        ]
-        with context.Pool(processes=self.num_processes) as pool:
-            return pool.map(self.run_from_dict, dicts)
+        if self.num_processes != 0:
+            # Use multiprocessing (experimental)
+            context = multiprocessing.get_context("spawn")
+            dicts = [
+                p if isinstance(p, dict) else {"problem": p} for p in problems
+            ]
+            with context.Pool(processes=self.num_processes) as pool:
+                return pool.map(self.run_from_dict, dicts)
+        else:
+            results = []
+            if show_progress:
+                import tqdm
+                problems_iterator = tqdm.tqdm(problems)
+            else:
+                problems_iterator = iter(problems)
+
+            for problem in problems_iterator:
+                if isinstance(problem, dict):
+                    result = self.run(**problem)
+                else:
+                    result = self.run(problem)
+                results.append(result)
+            return results
 
     def run_from_dict(self, d):
         return self.run(**d)
-
-    # Saving this for now in case we revert the above
-    def non_multiprocessing_run_multiple(
-            self,
-            problems : List[ScaffoldProblem],
-            show_progress=False,
-            items_per_request=None):
-
-        results = []
-        if show_progress:
-            import tqdm
-            problems_iterator = tqdm.tqdm(problems)
-        else:
-            problems_iterator = iter(problems)
-
-        for problem in problems_iterator:
-            if isinstance(problem, dict):
-                result = self.run(**problem)
-            else:
-                result = self.run(problem)
-            results.append(result)
-        return results
 
     def run(self, problem : ScaffoldProblem, num : int = 1):
         if self.conf.inference.deterministic:
