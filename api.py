@@ -137,6 +137,7 @@ class Tool(Resource):
                 "success": False,
                 "exception": (e.__class__.__name__, message),
             }
+            print(payload)
             return payload, 500
 
 api.add_resource(Tool, '/tool/<tool_name>')

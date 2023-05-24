@@ -26,17 +26,19 @@ def test_multiple_endpoints_mock(multiple_running_server_endpoints):
         num_recycle=0,
         amber_relax=False)
 
-    predictions = model.predict_multiple(
-        ["MOCKMOCK1", "MOCKMOCK2", "MOCKMOCK3", "MOCKMOCK4"])
+    predictions = list(
+        model.predict_multiple(
+            ["MOCKMOCK1", "MOCKMOCK2", "MOCKMOCK3", "MOCKMOCK4"]))
     assert model.most_recent_results.payload_id.nunique() == 4
     print(predictions)
     for prediction in predictions:
         assert prediction.ca.getSequence() == "AY"
         assert (prediction.getCoords()**2).sum() > 0
 
-    predictions = model.predict_multiple(
-        ["MOCKMOCK1", "MOCKMOCK2", "MOCKMOCK3", "MOCKMOCK4"],
-        items_per_request=2)
+    predictions = list(
+        model.predict_multiple(
+            ["MOCKMOCK1", "MOCKMOCK2", "MOCKMOCK3", "MOCKMOCK4"],
+            items_per_request=2))
     assert model.most_recent_results.payload_id.nunique() == 2
     print(predictions)
     for prediction in predictions:

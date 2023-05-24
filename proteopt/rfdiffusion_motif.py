@@ -2,6 +2,7 @@ import collections
 import logging
 import tempfile
 import time
+import multiprocessing
 
 from typing import Optional, List
 
@@ -11,7 +12,7 @@ import torch
 import prody
 import pandas
 
-from .common import set_residue_data, args_from_function_signature
+from .common import set_residue_data, args_from_function_signature, init_multiprocessing
 
 import rfdiffusion
 import rfdiffusion.inference.utils
@@ -202,18 +203,36 @@ def make_contigmap_from_problem(problem: ScaffoldProblem):
 class RFDiffusionMotif(object):
     tool_name = "rfdiffusion_motif"
 
-    def __init__(self, models_dir : str, num_timesteps : Optional[int] = None):
+    def __init__(self, models_dir : str, num_processes : int = 1, num_timesteps : Optional[int] = None):
+        self.num_processes = num_processes
         self.conf = DEFAULT_CONFIG.copy()
         self.conf.inference.model_directory_path = models_dir
         if num_timesteps is not None:
             self.conf.diffuser.T = num_timesteps
 
     config_args = args_from_function_signature(
-        __init__, include=["models_dir"])
+        __init__, include=["models_dir", "num_processes"])
     model_args = args_from_function_signature(
         __init__, exclude=list(config_args))
 
     def run_multiple(
+            self,
+            problems : List[ScaffoldProblem],
+            show_progress=False,
+            items_per_request=None):
+
+        init_multiprocessing()
+        dicts = [
+            p if isinstance(p, dict) else {"problem": p} for p in problems
+        ]
+        with multiprocessing.Pool(processes=self.num_processes) as pool:
+            return pool.map(self.run_from_dict, dicts)
+
+    def run_from_dict(self, d):
+        return self.run(**d)
+
+    # Saving this for now in case we revert the above
+    def non_multiprocessing_run_multiple(
             self,
             problems : List[ScaffoldProblem],
             show_progress=False,

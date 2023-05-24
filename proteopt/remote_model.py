@@ -14,7 +14,11 @@ class RemoteModel():
 
     # list_of_dicts can also be a list of tuples or a list of objects
     # these are treated as positional arguments
-    def run_multiple(self, list_of_dicts, items_per_request=1, show_progress=False):
+    def run_multiple(
+            self,
+            list_of_dicts,
+            items_per_request=1,
+            show_progress=False):
         payloads = []
         payload = None
 
@@ -70,6 +74,7 @@ class RemoteModel():
                 import tqdm
                 iterator = tqdm.tqdm(iterator)
 
+            next_payload_id_to_yield = 0
             for _ in iterator:
                 (payload_id, return_payload) = result_queue.get()
                 if return_payload.get("success"):
@@ -87,14 +92,20 @@ class RemoteModel():
                         "Remote error: %s. Request was: %s." % (
                             str(return_payload), str(payloads[payload_id])))
 
+                while next_payload_id_to_yield in result_payloads:
+                    current_results = result_payloads[
+                        next_payload_id_to_yield
+                    ]['parsed_results']
+                    for obj in current_results:
+                        yield obj
+                    next_payload_id_to_yield += 1
+
             return_payloads = [
                 result_payloads.pop(i)
                 for i in range(len(payloads))
             ]
             assert len(result_payloads) == 0
-
             self.most_recent_results = pandas.DataFrame(return_payloads)
-            return self.most_recent_results["parsed_results"].explode().values
 
         finally:
             for payload in payloads:

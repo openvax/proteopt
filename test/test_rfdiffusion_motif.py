@@ -37,9 +37,7 @@ def test_basic(caplog):
     print("*** Initialization time", time.time() - start)
 
     start = time.time()
-    results = runner.run(
-        problem,
-        num=1)
+    results, = list(runner.run_multiple([{"problem": problem, "num": 1}]))
     print("*** Run time", (time.time() - start))
 
     assert len(results) == 1
@@ -57,6 +55,7 @@ def test_basic(caplog):
     assert construct.select("constrained_by_structure").ca.getSequence() == (
             structure_to_recapitulate.ca.getSequence())
     assert len(construct.select("unconstrained").ca) == 50
+
 
 def test_basic_with_nanobody(caplog):
     caplog.set_level(logging.INFO)
@@ -88,9 +87,7 @@ def test_basic_with_nanobody(caplog):
     print("*** Initialization time", time.time() - start)
 
     start = time.time()
-    results = runner.run(
-        problem,
-        num=1)
+    results, = list(runner.run_multiple([problem]))
     print("*** Run time", (time.time() - start))
 
     assert len(results) == 1

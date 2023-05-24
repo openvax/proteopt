@@ -1,6 +1,7 @@
 import tempfile
 import os
 import pickle
+import hashlib
 
 import numpy
 import pandas

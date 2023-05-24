@@ -69,6 +69,14 @@ class ScaffoldProblem(object):
             segments = []
         self.segments = segments
 
+    def get_first_chain(self):
+        segments = []
+        for segment in self.segments:
+            if isinstance(segment, ChainBreak):
+                break
+            segments.append(segment)
+        return ScaffoldProblem(self.structure, segments)
+
     def get_structure(self, renumber_resnums_as_resindices=True):
         handle = self.structure.copy()
         if renumber_resnums_as_resindices:

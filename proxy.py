@@ -95,6 +95,7 @@ arg_parser.add_argument("--endpoints", nargs="+")
 arg_parser.add_argument("--host", default="127.0.0.1")
 arg_parser.add_argument("--port", type=int)
 arg_parser.add_argument("--write-endpoint-to-file")
+arg_parser.add_argument("--write-launched-endpoints-to-file")
 arg_parser.add_argument(
     "--debug",
     default=False,
@@ -104,7 +105,7 @@ arg_parser.add_argument(
     "--launch-servers",
     metavar="N",
     type=int,
-    help="Launch N API servers. If N=-1, then one server is launched per GPU and "
+    help="Launch N API servers. If N=-K, then K servers are launched per GPU and "
     "the CUDA_VISIBLE_DEVICES parameter is set accordingly for each server.")
 arg_parser.add_argument(
     "--launch-args",
@@ -121,12 +122,15 @@ if __name__ == '__main__':
         print(args)
         num_to_launch = args.launch_servers
         set_cuda_visible_devices = False
-        if args.launch_servers == -1:
+        num_per_gpu = None
+        if args.launch_servers < 0:
+            num_per_gpu = -args.launch_servers
             gpu_lines = subprocess.check_output(["nvidia-smi", "-L"]).decode().split("\n")
             gpu_lines = [g.strip() for g in gpu_lines]
             gpu_lines = [g for g in gpu_lines if g.startswith("GPU ")]
-            num_to_launch = len(gpu_lines)
-            print(f"Detected {num_to_launch} GPUs.")
+            print(f"Detected {len(gpu_lines)} GPUs.")
+            num_to_launch = len(gpu_lines) * num_per_gpu
+            print(f"Will launch {num_to_launch} processes on GPUs.")
             set_cuda_visible_devices = True
 
         work_dir = tempfile.TemporaryDirectory(prefix="proteopt_proxy_")
@@ -140,7 +144,7 @@ if __name__ == '__main__':
             sub_args.extend(["--write-endpoint-to-file", endpoint_file])
             environ = os.environ.copy()
             if set_cuda_visible_devices:
-                environ["CUDA_VISIBLE_DEVICES"] = str(i)
+                environ["CUDA_VISIBLE_DEVICES"] = str(i // num_per_gpu)
             print(f"Launching API server {i} / {num_to_launch} with args:")
             print(sub_args)
 
@@ -161,6 +165,13 @@ if __name__ == '__main__':
             print(f"API server {i} at endpoint {endpoint} will log to {logfile}")
             endpoint_to_process[endpoint] = process
         Proxy.endpoints.update(list(endpoint_to_process))
+
+        if args.write_launched_endpoints_to_file:
+            with open(args.write_launched_endpoints_to_file, "w") as fd:
+                for endpoint in Proxy.endpoints:
+                    fd.write(endpoint)
+                    fd.write("\n")
+            print("Wrote", args.write_launched_endpoints_to_file)
 
     Proxy.max_retries = args.max_retries
     if args.endpoints:

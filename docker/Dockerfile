@@ -82,12 +82,12 @@ RUN mkdir /data/static/rfdiffusion-params \
     && wget -nv http://files.ipd.uw.edu/pub/RFdiffusion/f572d396fae9206628714fb2ce00f72e/Complex_beta_ckpt.pt
 
 # OpenFold
-RUN cd /data/static \
-    && git clone https://github.com/timodonnell/openfold.git \
-    && cd openfold \
-    && git remote add upstream https://github.com/aqlaboratory/openfold.git \
-    && mkdir -p /data/static/openfold-params/ \
-    && bash scripts/download_openfold_params_huggingface.sh /data/static/openfold-params/
+#RUN cd /data/static \
+#    && git clone https://github.com/timodonnell/openfold.git \
+#    && cd openfold \
+#    && git remote add upstream https://github.com/aqlaboratory/openfold.git \
+#    && mkdir -p /data/static/openfold-params/ \
+#    && bash scripts/download_openfold_params_huggingface.sh /data/static/openfold-params/
 
 # Omegafold
 RUN wget -nv --progress=dot:giga --show-progress \
@@ -109,23 +109,19 @@ RUN conda update -n base -c defaults conda \
 RUN rm miniconda3/envs/design-env \
     && conda create -n design-env \
         python=3.8 \
-        pytorch=1.11 \
-        dgl-cuda11.6 \
-        cudatoolkit=11.3 \
-        cuda-toolkit \
+        pytorch torchvision torchaudio pytorch-cuda=11.8 \
+        dgl \
+        cudatoolkit=11.8 \
+        pyg \
+        openmm==7.7.0 \
+        pdbfixer \
         numpy scipy requests packaging pip \
-        -c "nvidia/label/cuda-11.3.1" -c pytorch -c dglteam  \
+        -c nvidia -c pytorch -c dglteam/label/cu118 -c pyg -c conda-forge  \
     && mv miniconda3/envs/design-env /data/static \
     && ln -s /data/static/design-env/ miniconda3/envs/design-env
 
-RUN conda install -n design-env \
-    pyg \
-    openmm==7.5.1 \
-    -c pyg -c conda-forge
-
 # conda environment setup
 RUN /root/miniconda3/envs/design-env/bin/pip install \
-        https://github.com/openmm/pdbfixer/archive/refs/tags/v1.7.tar.gz \
         icecream==2.1.3 \
         lie_learn==0.0.1.post1 \
         opt_einsum==3.3.0 \
@@ -142,7 +138,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
         ml-collections==0.1.0 \
         tensorflow-gpu==2.11.0 \
         biopython==1.81 \
-        pytorch-lightning==1.9.3 # For openfold \
+        pytorch-lightning # For openfold \
     && conda clean -afy \
     && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/AlphaFold \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
@@ -181,9 +177,9 @@ RUN cd /data/static \
     && /root/miniconda3/envs/design-env/bin/pip install -e ~/ProteinMPNN
 
 # OpenFold
-RUN cd /data/static/openfold \
-    && git pull origin main \
-    && /root/miniconda3/envs/design-env/bin/pip install -e ~/openfold
+#RUN cd /data/static/openfold \
+#    && git pull origin main \
+#    && /root/miniconda3/envs/design-env/bin/pip install -e ~/openfold
 
 # RFDiffusion
 RUN cd /data/static \
@@ -194,25 +190,16 @@ RUN cd /data/static \
 
 RUN cd /data/static/RFDiffusion/env/SE3Transformer \
     && /root/miniconda3/envs/design-env/bin/pip install --no-cache-dir -r requirements.txt \
-    && python setup.py install \
+    && /root/miniconda3/envs/design-env/bin/pip install . pyrsistent \
     && cd /data/static/RFDiffusion \
-    && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/RFDiffusion --no-deps
+    && /root/miniconda3/envs/design-env/bin/pip install -e /data/static/RFDiffusion #--no-deps
 
-# We run OmegaFold to test that it has the weights.
-RUN mkdir -p /data/static/example-data \
-    && wget -nv -P /data/static/example-data https://files.rcsb.org/download/7SL5.pdb \
-    && ls -lh /root/.cache/omegafold_ckpt/model.pt
-
-COPY container-files/test_protein.fa /data/static/example-data/
+# OmegaFold
 RUN cd /data/static \
     && git clone https://github.com/timodonnell/OmegaFold \
     && cd OmegaFold \
     && git remote add upstream https://github.com/HeliXonProtein/OmegaFold \
-    && /root/miniconda3/envs/design-env/bin/python setup.py install \
-    && mkdir -p /tmp/omegafold_out \
-    && /root/miniconda3/envs/design-env/bin/omegafold /data/static/example-data/test_protein.fa /tmp/omegafold_out \
-    && ls -lh /tmp/omegafold_out \
-    && rm -rf /tmp/omegafold_out
+    && /root/miniconda3/envs/design-env/bin/pip install -e . --no-deps
 
 # Clone proteopt repo
 RUN cd /data/static \
@@ -242,6 +229,7 @@ RUN /root/miniconda3/envs/design-env/bin/pip install \
     ipython \
     optuna \
     optuna-dashboard \
+    frozendict \
     && conda clean -afy \
     && /root/miniconda3/envs/design-env/bin/pip cache purge
 
