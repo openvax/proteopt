@@ -49,10 +49,3 @@ def args_from_function_signature(function, include=[], exclude=[]):
             d['default'] = parameter.default
         result[parameter.name] = d
     return result
-
-MULTIPROCESSING_INIT = False
-def init_multiprocessing():
-    global MULTIPROCESSING_INIT
-    if not MULTIPROCESSING_INIT:
-        multiprocessing.set_start_method('fork')
-        MULTIPROCESSING_INIT = True

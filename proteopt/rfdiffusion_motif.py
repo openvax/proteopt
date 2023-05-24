@@ -12,7 +12,7 @@ import torch
 import prody
 import pandas
 
-from .common import set_residue_data, args_from_function_signature, init_multiprocessing
+from .common import set_residue_data, args_from_function_signature
 
 import rfdiffusion
 import rfdiffusion.inference.utils
@@ -221,11 +221,11 @@ class RFDiffusionMotif(object):
             show_progress=False,
             items_per_request=None):
 
-        init_multiprocessing()
+        context = multiprocessing.get_context("spawn")
         dicts = [
             p if isinstance(p, dict) else {"problem": p} for p in problems
         ]
-        with multiprocessing.Pool(processes=self.num_processes) as pool:
+        with context.Pool(processes=self.num_processes) as pool:
             return pool.map(self.run_from_dict, dicts)
 
     def run_from_dict(self, d):
