@@ -1,7 +1,7 @@
 # Note: much of this is inspired by RFDesign af2_metrics.py script
 import os
 # See https://github.com/google/jax/issues/1222
-os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = '\"platform\"'
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = '0.5'
 
 import io
 import numpy
