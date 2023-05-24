@@ -1,5 +1,8 @@
 # Note: much of this is inspired by RFDesign af2_metrics.py script
 import os
+# See https://github.com/google/jax/issues/1222
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = '\"platform\"'
+
 import io
 import numpy
 import pandas
