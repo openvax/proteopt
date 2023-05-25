@@ -1,4 +1,5 @@
 import json
+import time
 from queue import Queue
 import threading
 
@@ -62,14 +63,13 @@ class Client():
                         try:
                             result = session.post(
                                 full_endpoint, json=payload_without_tool_name)
-                        except urllib3.exceptions.HTTPError as e:
+                        except (IOError, urllib3.exceptions.HTTPError) as e:
                             logging.warning(
-                                "HTTPError [attempt %d of %d]" % (
-                                    i + 1, self.max_retries),
-                                full_endpoint,
-                                e)
+                                "IOError or HTTPError [attempt %d of %d]: %s %s %s" % (
+                                    i + 1, self.max_retries, full_endpoint, type(e), e))
                             session = requests.Session()
                             exception = e
+                            time.sleep(2**i)
                         except TypeError as e:
                             exception = e
                             break
