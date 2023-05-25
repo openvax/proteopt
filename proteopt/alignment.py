@@ -35,7 +35,8 @@ def smart_align(
         target : prody.AtomGroup,
         part_of_mobile_to_align  : prody.AtomGroup = None,
         reorder_atoms_by_name : bool = True,
-        fix_symmetries : bool = True):
+        fix_symmetries : bool = True,
+        allow_missing=False):
     """
     Align mobile atoms onto target atoms, optionally taking into account
     atom names and symmetries.
@@ -56,46 +57,48 @@ def smart_align(
     fix_symmetries : bool
         If True, fix symmetries by swapping equivalent atoms in the
         part_of_mobile_to_align (e.g. ASP OD1 and OD2) if it improves rmsd.
+    allow_missing : bool
+        Allow missing atoms within a residue. Still requires that the residues
+        agree exactly.
 
     Returns
     -------
     (aligned mobile atoms, rmsd)
     """
+    if allow_missing and not reorder_atoms_by_name:
+        raise ValueError("Can only allow missing atoms if also reordering by name")
 
     if part_of_mobile_to_align is None:
         part_of_mobile_to_align = mobile.copy()
 
-    if len(part_of_mobile_to_align) != len(target):
+    if len(part_of_mobile_to_align) != len(target) and not allow_missing:
         raise ValueError(
             "Differing number of atoms between mobile and target: %d != %d" % (
                 len(part_of_mobile_to_align), len(target)))
 
     if reorder_atoms_by_name:
-        remapped_resindices_mobile, _ = pandas.Series(
-            part_of_mobile_to_align.getResindices()).factorize()
-        remapped_resindices_target, _ = pandas.Series(
-            part_of_mobile_to_align.getResindices()).factorize()
-
         mobile_keys = list(zip(
-            remapped_resindices_mobile, part_of_mobile_to_align.getNames()))
+            part_of_mobile_to_align.copy().getResindices(),
+            part_of_mobile_to_align.getNames()))
         target_keys = list(zip(
-            remapped_resindices_target, target.getNames()))
+            target.copy().getResindices(),
+            target.getNames()))
 
-        missing_mobile = [
-            pair for pair in target_keys if pair not in set(mobile_keys)
+        missing_in_mobile = [
+            pair for pair in target_keys if pair not in mobile_keys
         ]
-        missing_target = [
-            pair for pair in mobile_keys if pair not in set(target_keys)
+        missing_in_target = [
+            pair for pair in mobile_keys if pair not in target_keys
         ]
-        if missing_mobile:
+        if missing_in_mobile:
             raise ValueError(
                 "Missing atoms in mobile: %s. Mobile atoms are: %s" % (
-                    str(missing_mobile),
+                    str(missing_in_mobile),
                     str(mobile_keys)))
-        if missing_target:
+        if missing_in_target:
             raise ValueError(
                     "Missing atoms in target: %s. Target atoms are: %s" % (
-                        str(missing_target),
+                        str(missing_in_target),
                         str(target_keys)))
 
         key_to_mobile_index = dict(
@@ -108,7 +111,7 @@ def smart_align(
 
     if fix_symmetries:
         df = pandas.DataFrame({
-            "resindex": part_of_mobile_to_align.getResindices(),
+            "resindex": part_of_mobile_to_align.copy().getResindices(),
             "resname": part_of_mobile_to_align.getResnames(),
             "atom_name": part_of_mobile_to_align.getNames(),
         })

@@ -1,4 +1,5 @@
 import collections
+import logging
 from collections import namedtuple
 import numpy
 import pickle
@@ -188,11 +189,14 @@ class ScaffoldProblem(object):
         for motif_num in motif_nums:
             # There must be a more efficient way to do this
             # Note: this is complicated because order matters
+
+            # Collect target resindices
             target_resindices = []
             for segment in constrained_segments:
                 if segment.motif_num == motif_num:
                     target_resindices.extend(segment.resindices)
 
+            # Run-length encode target resindices
             target_resindices_start_stop = []
             for idx in target_resindices:
                 if (
@@ -204,7 +208,7 @@ class ScaffoldProblem(object):
 
             reference_target_pieces = []
             for (start, stop) in target_resindices_start_stop:
-                reference_target_piece = self.structure.select(
+                reference_target_piece = self.get_structure().select(
                     "resindex %d to %d" % (start, stop)).copy()
                 reference_target_pieces.append(reference_target_piece)
             reference_target = combine_atom_groups(reference_target_pieces)
@@ -225,9 +229,21 @@ class ScaffoldProblem(object):
                 current_index += segment.length
             designed_target = combine_atom_groups(designed_target_pieces)
 
+            # We allow missing atoms in reference_target
+            missing_in_reference = [
+                pair for pair
+                in zip(designed_target.getResindices(), designed_target.getNames())
+                if pair not in set(
+                    zip(reference_target.getResindices(), reference_target.getNames()))
+            ]
+            if missing_in_reference:
+                logging.warning("Omitting missing atoms from reference: %s", str(missing_in_reference))
+                sel = "not (%s)" % " or ".join(
+                    f"(resindex {i} and name {name})" for (i, name) in missing_in_reference)
+                designed_target = designed_target.select(sel).copy()
+
             numpy.testing.assert_equal(len(reference_target.ca), len(designed_target.ca))
             numpy.testing.assert_equal(len(reference_target), len(designed_target))
-
             ca_rmsd = smart_align(reference_target.ca, designed_target.ca).rmsd
             all_atom_rmsd = smart_align(reference_target, designed_target).rmsd
             results[f"motif_{motif_num}_ca_rmsd"] = ca_rmsd
@@ -257,4 +273,4 @@ def combine_atom_groups(pieces):
     for piece in pieces[1:]:
         result += piece
         result._title = "Combined"
-    return result
+    return result.copy()
