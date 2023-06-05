@@ -173,18 +173,22 @@ class ScaffoldProblem(object):
         self.segments.append(ChainBreak())
         return self
 
-    def evaluate_solution(self, designed_structure, prefix=""):
-        designed_structure = designed_structure.copy()  # resets resindices
-        constrained_segments = [
-            c for c in self.segments if isinstance(c, ConstrainedSegment)
-        ]
+    def constrained_segments(self):
+        return [s for s in self.segments if isinstance(s, ConstrainedSegment)]
+
+    def motif_nums(self):
         motif_nums = set()
-        for segment in constrained_segments:
+        for segment in self.constrained_segments():
             if segment.motif_num is None:
-                raise ValueError("No motif_num specified for %s" % segment)
+                raise ValueError("No motif_num specified for %s" % str(segment))
             motif_nums.add(segment.motif_num)
         motif_nums = sorted(motif_nums)
+        return motif_nums
 
+    def evaluate_solution(self, designed_structure, prefix=""):
+        designed_structure = designed_structure.copy()  # resets resindices
+        constrained_segments = self.constrained_segments()
+        motif_nums = self.motif_nums()
         results = collections.defaultdict(list)
         for motif_num in motif_nums:
             # There must be a more efficient way to do this
