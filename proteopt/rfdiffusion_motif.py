@@ -13,7 +13,6 @@ import pandas
 
 from .common import set_residue_data, args_from_function_signature
 
-from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
 
 from .scaffold_problem import (
