@@ -10,8 +10,6 @@ import prody
 
 import yabul
 
-from ProteinMPNN import protein_mpnn_run
-
 from .common import args_from_function_signature
 
 class ProteinMPNN(object):
@@ -31,6 +29,8 @@ class ProteinMPNN(object):
             sampling_temp : float = 0.1,
             batch_size : int = 1,
             verbose : bool = False):
+
+        from ProteinMPNN import protein_mpnn_run
 
         # Reset resnums to avoid gaps
         chains = numpy.unique(structure.getChids())

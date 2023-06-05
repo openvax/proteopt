@@ -13,10 +13,6 @@ import torch
 
 from typing import Optional
 
-import omegafold
-import omegafold.config
-import omegafold.pipeline
-
 from .common import args_from_function_signature
 
 prody.confProDy(verbosity='none')
@@ -32,6 +28,9 @@ class OmegaFold(object):
             model_num : int = 1,
             subbatch_size : Optional[int] = None,
             num_cycle : int = 10):
+
+        import omegafold
+        import omegafold.config
 
         if model_num == 1:
             model_name = "model.pt"
@@ -63,6 +62,9 @@ class OmegaFold(object):
         __init__, exclude=list(config_args))
 
     def run_multiple(self, sequences, show_progress=False, items_per_request=None):
+        import omegafold
+        import omegafold.pipeline
+
         new_sequences = []
         for obj in sequences:
             if isinstance(obj, dict):

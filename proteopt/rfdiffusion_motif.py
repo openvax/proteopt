@@ -14,9 +14,6 @@ import pandas
 
 from .common import set_residue_data, args_from_function_signature
 
-import rfdiffusion
-import rfdiffusion.inference.utils
-
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
 
@@ -249,6 +246,9 @@ class RFDiffusionMotif(object):
         return self.run(**d)
 
     def run(self, problem : ScaffoldProblem, num : int = 1):
+        import rfdiffusion
+        import rfdiffusion.inference.utils
+
         if self.conf.inference.deterministic:
             make_deterministic(0)
 
