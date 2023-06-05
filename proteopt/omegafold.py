@@ -9,8 +9,6 @@ import prody
 
 import yabul
 
-import torch
-
 from typing import Optional
 
 from .common import args_from_function_signature
@@ -31,6 +29,7 @@ class OmegaFold(object):
 
         import omegafold
         import omegafold.config
+        import torch
 
         if model_num == 1:
             model_name = "model.pt"
@@ -62,6 +61,7 @@ class OmegaFold(object):
         __init__, exclude=list(config_args))
 
     def run_multiple(self, sequences, show_progress=False, items_per_request=None):
+        import torch
         import omegafold
         import omegafold.pipeline
 

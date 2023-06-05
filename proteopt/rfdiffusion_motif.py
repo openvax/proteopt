@@ -8,7 +8,6 @@ from typing import Optional, List
 
 import numpy
 import random
-import torch
 import prody
 import pandas
 
@@ -22,6 +21,7 @@ from .scaffold_problem import (
 
 # From RFDiffusion
 def make_deterministic(seed=0):
+    import torch
     torch.manual_seed(seed)
     numpy.random.seed(seed)
     random.seed(seed)
@@ -246,6 +246,7 @@ class RFDiffusionMotif(object):
         return self.run(**d)
 
     def run(self, problem : ScaffoldProblem, num : int = 1):
+        import torch
         import rfdiffusion
         import rfdiffusion.inference.utils
 
