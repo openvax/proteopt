@@ -139,10 +139,10 @@ if __name__ == '__main__':
                 num_gpus = subprocess.check_output(["nvidia-smi", "-L"]).decode().split("\n")
                 num_gpus = [g.strip() for g in num_gpus]
                 num_gpus = len([g for g in num_gpus if g.startswith("GPU ")])
-                print(f"Detected {len(num_gpus)} GPUs.")
+                print(f"Detected {num_gpus} GPUs.")
                 cuda_devices_map = dict((i, i) for i in range(num_gpus))
 
-            num_to_launch = len(num_gpus) * num_per_gpu
+            num_to_launch = num_gpus * num_per_gpu
             print(f"Will launch {num_to_launch} processes on GPUs.")
             set_cuda_visible_devices = True
 
