@@ -108,6 +108,11 @@ arg_parser.add_argument(
     help="Launch N API servers. If N=-K, then K servers are launched per GPU and "
     "the CUDA_VISIBLE_DEVICES parameter is set accordingly for each server.")
 arg_parser.add_argument(
+    "--cuda-devices",
+    nargs="+",
+    type=int,
+    help="CUDA device numbers to use for launched API servers.")
+arg_parser.add_argument(
     "--launch-args",
     nargs=argparse.REMAINDER,
     help="All following args are args for launched API servers.")
@@ -125,11 +130,19 @@ if __name__ == '__main__':
         num_per_gpu = None
         if args.launch_servers < 0:
             num_per_gpu = -args.launch_servers
-            gpu_lines = subprocess.check_output(["nvidia-smi", "-L"]).decode().split("\n")
-            gpu_lines = [g.strip() for g in gpu_lines]
-            gpu_lines = [g for g in gpu_lines if g.startswith("GPU ")]
-            print(f"Detected {len(gpu_lines)} GPUs.")
-            num_to_launch = len(gpu_lines) * num_per_gpu
+            if args.cuda_devices:
+                print("Using specified cuda devices")
+                num_gpus = len(args.cuda_devices)
+                cuda_devices_map = dict(
+                    (i, v) for (i, v) in enumerate(args.cuda_devices))
+            else:
+                num_gpus = subprocess.check_output(["nvidia-smi", "-L"]).decode().split("\n")
+                num_gpus = [g.strip() for g in num_gpus]
+                num_gpus = [g for g in num_gpus if g.startswith("GPU ")]
+                print(f"Detected {len(num_gpus)} GPUs.")
+                cuda_devices_map = dict((i, i) for i in range(num_gpus))
+
+            num_to_launch = len(num_gpus) * num_per_gpu
             print(f"Will launch {num_to_launch} processes on GPUs.")
             set_cuda_visible_devices = True
 
@@ -144,7 +157,8 @@ if __name__ == '__main__':
             sub_args.extend(["--write-endpoint-to-file", endpoint_file])
             environ = os.environ.copy()
             if set_cuda_visible_devices:
-                environ["CUDA_VISIBLE_DEVICES"] = str(i // num_per_gpu)
+                environ["CUDA_VISIBLE_DEVICES"] = str(
+                    cuda_devices_map[i // num_per_gpu])
             print(f"Launching API server {i} / {num_to_launch} with args:")
             print(sub_args)
 
