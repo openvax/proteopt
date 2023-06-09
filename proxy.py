@@ -138,7 +138,7 @@ if __name__ == '__main__':
             else:
                 num_gpus = subprocess.check_output(["nvidia-smi", "-L"]).decode().split("\n")
                 num_gpus = [g.strip() for g in num_gpus]
-                num_gpus = [g for g in num_gpus if g.startswith("GPU ")]
+                num_gpus = len([g for g in num_gpus if g.startswith("GPU ")])
                 print(f"Detected {len(num_gpus)} GPUs.")
                 cuda_devices_map = dict((i, i) for i in range(num_gpus))
 
