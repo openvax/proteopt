@@ -18,6 +18,7 @@ python \
     --debug \
     --host $HOST \
     --port $PORT \
+    "${@:4}" \
     --launch-servers $NUM \
     --write-endpoint-to-file "$ENDPOINTS_FILE" \
     --write-launched-endpoints-to-file "$WORKERS_ENDPOINTS_FILE" \
