@@ -185,7 +185,7 @@ class ScaffoldProblem(object):
         motif_nums = sorted(motif_nums)
         return motif_nums
 
-    def evaluate_solution(self, designed_structure, prefix="", ca_only=False):
+    def evaluate_solution(self, designed_structure, prefix="", ca_only=False, ca_only_motif_nums=[]):
         designed_structure = designed_structure.copy()  # resets resindices
         constrained_segments = self.constrained_segments()
         motif_nums = self.motif_nums()
@@ -234,7 +234,7 @@ class ScaffoldProblem(object):
                 current_index += segment.length
             designed_target = combine_atom_groups(designed_target_pieces)
 
-            if ca_only:
+            if ca_only or motif_num in ca_only_motif_nums:
                 reference_target = reference_target.ca
                 designed_target = designed_target.ca
 
@@ -254,7 +254,7 @@ class ScaffoldProblem(object):
             numpy.testing.assert_equal(len(reference_target.ca), len(designed_target.ca))
             ca_rmsd = smart_align(reference_target.ca, designed_target.ca).rmsd
             results[f"motif_{motif_num}_ca_rmsd"] = ca_rmsd
-            if not ca_only:
+            if not (ca_only or motif_num in ca_only_motif_nums):
                 numpy.testing.assert_equal(len(reference_target), len(designed_target))
                 all_atom_rmsd = smart_align(reference_target, designed_target).rmsd
                 results[f"motif_{motif_num}_all_atom_rmsd"] = all_atom_rmsd
