@@ -217,7 +217,7 @@ RUN echo "conda activate design-env" >> ~/.bashrc
 FROM base as complete
 
 RUN /root/miniconda3/envs/design-env/bin/pip install \
-    'ipywidgets<8' \
+    ipywidgets \
     pandas \
     seaborn \
     jupyterlab \
